@@ -3,35 +3,41 @@ package network;
 import java.net.*;
 import java.io.*;
 
-public class SendMessage {
-	private String send_ip;
-	private String send_port;
-	private Socket send_socket;
-	private DataOutputStream currentSocketStream;
+public class SocketConnection {
+//	private String send_ip;
+//	private String send_port;
+	private Socket socket;
+	private DataOutputStream output_stream;
+	private DataInputStream input_stream;
 	
-	public SendMessage(String ip, int toPort) throws IOException {
-		send_socket = new Socket(ip, toPort);
-		currentSocketStream = new DataOutputStream(send_socket.getOutputStream());
+	public SocketConnection(Socket socket) throws IOException {
+//		send_socket = new Socket(ip, toPort);
+		this.socket = socket;
+		output_stream = new DataOutputStream(socket.getOutputStream());
+		input_stream = new DataInputStream(socket.getInputStream());
 	}
 	
 	public boolean send(byte[] message){
 		try {
-			int count = 0;
-//			while(count < 50) {
-				currentSocketStream.write(message);
-				Thread.sleep(100);
-//			}
+			System.out.println("sending");
+				output_stream.write(message);
 		} catch(IOException e) {
-//			e.printStackTrace();
 			return false;
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
+		}
 		return true;
-
 	}
 	
+	public int read() throws IOException {
+		return input_stream.read();
+	}
+	
+	public int inputAvailable() throws IOException {
+		return input_stream.available();
+	}
+	
+	public void read(byte[] arr, int start, int length) throws IOException {
+		input_stream.read(arr,0,length);
+	}
 	
 	
 	
@@ -66,12 +72,12 @@ public class SendMessage {
 	public static void main(String[] args) throws IOException, InterruptedException {
 		byte[] message1 = {1,2};
 		byte[] message2 = {3,4};
-		SendMessage m = new SendMessage("127.0.0.1", 9095);
-		String message = "file_name\ntextextext";
-		byte[] msg = message.getBytes();
-		System.out.println(msg.length);
-		m.send(new byte[] {0, (byte)msg.length});
-		m.send(msg);
+//		SocketConnection m = new SocketConnection("127.0.0.1", 9095);
+//		String message = "file_name\ntextextext";
+//		byte[] msg = message.getBytes();
+//		System.out.println(msg.length);
+//		m.send(new byte[] {0, (byte)msg.length});
+//		m.send(msg);
 //		System.out.println("here");
 		Thread.sleep(1000);
 //		m.send(new byte[]{5});

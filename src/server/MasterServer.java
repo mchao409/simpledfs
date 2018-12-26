@@ -2,19 +2,18 @@ package server;
 import java.io.*;
 import java.util.*;
 
+import network.SocketConnection;
 import simpledfs.Constants;
 
 import java.net.*;
 
 public class MasterServer {
 	private int startingPort;
-//	private ArrayList<String> files;
-	private HashMap<String, String> file_contents;
-	private HashSet<String> file_names;
+	private HashMap<String, String> files;
 
 	public MasterServer(int startingPort) throws IOException {
 		this.startingPort = startingPort;
-//		files = new ArrayList<String>();
+		files = new HashMap<String, String>();
 	}
 	
 	public void start() {
@@ -26,9 +25,12 @@ public class MasterServer {
 			}
 		});
 		t.start();
-
 	}
 	
+	/**
+	 * Listens for incoming connections to the server
+	 * @throws IOException
+	 */
 	private void listen() throws IOException{
 		ServerSocket client_listener = new ServerSocket(startingPort);
         try {
@@ -36,12 +38,13 @@ public class MasterServer {
                 Socket socket = client_listener.accept();
                 Thread t = new Thread(() -> {
                     try {
-                        DataInputStream input = new DataInputStream(socket.getInputStream());
+                    	SocketConnection s = new SocketConnection(socket);
+//                        DataInputStream input = new DataInputStream(socket.getInputStream());
                     	while(true) {
-                    		if(input.available() == 0) {
+                    		if(s.inputAvailable() == 0) {
                     			continue;
                     		}
-                    		handleInput(input);
+                    		handleInput(s);
                     	}
                     } catch(IOException e) {
                     	e.printStackTrace();
@@ -55,37 +58,77 @@ public class MasterServer {
         }
 	}
 	
-	private void handleInput(DataInputStream input) throws IOException {
-		int val = input.read();
-		String command = Constants.CLIENT_COMMANDS[val];
+	private void handleInput(SocketConnection s) throws IOException {
+		int val = s.read();
+		System.out.println(val + " value");
+//		if(val == 4) {
+//			System.out.println(s.read());
+//		}
+//		System.out.println("here");
+		
+		String command = Constants.COMMANDS[val];
+		System.out.println(command);
 		switch(command) {
 		case "add": // Add new file
-			add_file(input);
+			System.out.println("add called");
+			add_file(s);
 			break;
 		case "read": // Read file
+			System.out.println("read called");
+			read_file(s);
 			break;
 		case "delete": // Delete file
+			break;
+		case "new_minion": // new minion connection
+			break;
+		case "client": // initial client query
 			break;
 		default: 
 			break;
 		}
 	}
 	
-	private void add_file(DataInputStream input) throws IOException {
-		String contents = getStringFromStream(input);
+
+	/**
+	 * Adds a new file to the server
+	 * @param input
+	 * @throws IOException
+	 */
+	private void add_file(SocketConnection s) throws IOException {
+		String contents = getStringFromStream(s);
 		int newLine = contents.indexOf("\n");
-		String file_name = contents.substring(0, newLine);
-		String file_contents = contents.substring(newLine + 1);
+		String file_name = contents.substring(0, newLine).trim();
+		String file_contents = contents.substring(newLine + 1).trim();
+		files.put(file_name, file_contents);
+		
 		// TODO
+	}
+
+	private void read_file(SocketConnection s) throws IOException {
+		String file_name = getStringFromStream(s).trim();
+		String contents = files.get(file_name);
+		byte[] contents_bytes = contents.getBytes();
+		byte[] to_send = new byte[contents_bytes.length+1];
+		System.arraycopy(contents_bytes, 0, to_send, 1, contents_bytes.length);
+		to_send[0] = (byte)contents_bytes.length;
+		s.send(to_send);
 	}
 	
-	private void read(DataInputStream input) throws IOException {
-		
-		
-	}
-	private void delete_file(DataInputStream input) throws IOException {
-		String file_name = getStringFromStream(input).trim();
-		// TODO
+	/**
+	 * Deletes file from the server
+	 * @param input
+	 * @throws IOException
+	 */
+	private void delete_file(SocketConnection s) throws IOException {
+		// TODO second byte: get minion id
+		String file_name = getStringFromStream(s).trim();
+		String result = files.remove(file_name);
+		if(result == null) {
+		}
+		else {
+			
+		}
+		// TODO notifyAll
 
 	}
 	
@@ -94,10 +137,10 @@ public class MasterServer {
 //		// TODO
 //	}
 	
-	private String getStringFromStream(DataInputStream input) throws IOException {
-		int length = input.read();
+	private String getStringFromStream(SocketConnection s) throws IOException {
+		int length = s.read();
 		byte[] arr = new byte[length];
-		input.read(arr,0,length);
+		s.read(arr,0,length);
 		return new String(arr);
 	}
 	
