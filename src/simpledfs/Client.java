@@ -15,15 +15,13 @@ public class Client {
 		master_connection = new SocketConnection(master);
 		scan = new Scanner(System.in);
 		prompt();
-
-
 	}
 	
 	private void prompt() throws IOException {
-		Scanner scan = new Scanner(System.in);
+//		Scanner scan = new Scanner(System.in);
 		while(true) {
-			System.out.println("a, r, d");
-			String command = scan.next();
+			System.out.println("Enter 'a' to add a file, 'r' to read a file, 'd' to delete a file.");
+			String command = scan.nextLine();
 			switch(command) {
 			case "a":
 				promptAddFile();
@@ -32,7 +30,7 @@ public class Client {
 				promptReadFile();
 				break;
 			case "d":
-				System.out.println("d");
+				promptDeleteFile();
 				break;
 			default:
 				System.out.println("fail");
@@ -41,38 +39,41 @@ public class Client {
 	}
 	
 	private void promptAddFile() {
-		System.out.println("File name:");
-		Scanner scan = new Scanner(System.in);
+		System.out.println("File name: ");
 		String file_name = scan.nextLine();
-		System.out.println("File contents:");
+		System.out.println("File contents: ");
 		String contents = scan.nextLine();
-		byte[] file_string = (file_name + "\n" + contents).getBytes();
-		master_connection.send(merge(new byte[] {0, (byte)file_string.length}, file_string));
-		
+		Notify.addFile(master_connection, new FileContents(file_name.getBytes(), contents.getBytes()));
+//		master_connection.send(merge(new byte[] {0, (byte)file_string.length}, file_string));
 	}
 	
 	private void promptReadFile() throws IOException {
 		System.out.println("File name: ");
-		Scanner scan = new Scanner(System.in);
 		String file_name = scan.nextLine().trim();
 		byte[] name = file_name.getBytes();
-		master_connection.send(merge(new byte[] {1, (byte)name.length}, name));
-		int len = master_connection.read();
-		byte[] contents = new byte[len];
-		master_connection.read(contents, 0, len);
+		System.out.println(new String(Notify.readFile(master_connection, file_name)));
+		
+//		master_connection.send(merge(new byte[] {1, (byte)name.length}, name));
+//		int len = master_connection.read();
+//		byte[] contents = new byte[len];
+//		master_connection.read(contents, 0, len);
+//		System.out.println(new String(contents));
 	}
 	
-	public static byte[] merge(byte[] arr1, byte[] arr2) {
-		byte[] merged = new byte[arr1.length + arr2.length];
-		for(int i = 0; i < arr1.length; i++) {
-			merged[i] = arr1[i];
-		}
-		for(int i = 0; i < arr2.length; i++) {
-			merged[i+arr1.length] = arr2[i];
-		}
-		return merged;
-	}
+	private void promptDeleteFile() throws IOException {
+		System.out.println("File to delete: ");
+		String file_name = scan.nextLine();
+		System.out.println(new String(Notify.deleteFile(master_connection, file_name)));
 
+//		master_connection.send(merge(new byte[] {2, (byte) name.length}, name));
+//		int len = master_connection.read();
+//		byte[] contents = new byte[len];
+//		master_connection.read(contents, 0, len);
+//		System.out.println(new String(contents));
+
+		
+	}
+	
 
     public static void main(String[] args) throws IOException {
 //        Socket s = new Socket("127.0.0.1", 9091);

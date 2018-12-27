@@ -7,37 +7,47 @@ public class SocketConnection {
 //	private String send_ip;
 //	private String send_port;
 	private Socket socket;
-	private DataOutputStream output_stream;
-	private DataInputStream input_stream;
+	private ObjectOutputStream output_stream;
+	private ObjectInputStream input_stream;
 	
-	public SocketConnection(Socket socket) throws IOException {
-//		send_socket = new Socket(ip, toPort);
-		this.socket = socket;
-		output_stream = new DataOutputStream(socket.getOutputStream());
-		input_stream = new DataInputStream(socket.getInputStream());
+	public SocketConnection(Socket socket) {
+		try {
+			this.socket = socket;
+			output_stream = new ObjectOutputStream(socket.getOutputStream());
+			input_stream = new ObjectInputStream(socket.getInputStream());
+		} catch(IOException e) {
+			System.out.println("An error occurred in SocketConnection");
+			e.printStackTrace();
+		}
+
 	}
 	
-	public boolean send(byte[] message){
+	public boolean send(MessagePackage m){
 		try {
-			System.out.println("sending");
-				output_stream.write(message);
+			output_stream.writeObject(m);
 		} catch(IOException e) {
+			e.printStackTrace();
 			return false;
 		}
 		return true;
 	}
 	
-	public int read() throws IOException {
-		return input_stream.read();
+	public Object read() throws IOException, ClassNotFoundException {
+		try {
+			return input_stream.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 	
 	public int inputAvailable() throws IOException {
 		return input_stream.available();
 	}
 	
-	public void read(byte[] arr, int start, int length) throws IOException {
-		input_stream.read(arr,0,length);
-	}
+//	public void read(byte[] arr, int start, int length) throws IOException {
+//		input_stream.read(arr,0,length);
+//	}
 	
 	
 	
@@ -70,8 +80,8 @@ public class SocketConnection {
 //	}
 	
 	public static void main(String[] args) throws IOException, InterruptedException {
-		byte[] message1 = {1,2};
-		byte[] message2 = {3,4};
+//		byte[] message1 = {1,2};
+//		byte[] message2 = {3,4};
 //		SocketConnection m = new SocketConnection("127.0.0.1", 9095);
 //		String message = "file_name\ntextextext";
 //		byte[] msg = message.getBytes();

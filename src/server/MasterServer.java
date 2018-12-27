@@ -2,8 +2,10 @@ package server;
 import java.io.*;
 import java.util.*;
 
+import network.MessagePackage;
 import network.SocketConnection;
 import simpledfs.Constants;
+import simpledfs.FileContents;
 
 import java.net.*;
 
@@ -39,16 +41,19 @@ public class MasterServer {
                 Thread t = new Thread(() -> {
                     try {
                     	SocketConnection s = new SocketConnection(socket);
-//                        DataInputStream input = new DataInputStream(socket.getInputStream());
+                    	MessagePackage msg;
                     	while(true) {
-                    		if(s.inputAvailable() == 0) {
+                    		 msg = (MessagePackage) s.read();
+                    		if(msg == null) {
                     			continue;
                     		}
-                    		handleInput(s);
+                    		handleInput(s, msg);
                     	}
                     } catch(IOException e) {
                     	e.printStackTrace();
-                    }
+                    } catch (ClassNotFoundException e) {
+						e.printStackTrace();
+					}
                 });
                 t.start();
             }
@@ -58,26 +63,17 @@ public class MasterServer {
         }
 	}
 	
-	private void handleInput(SocketConnection s) throws IOException {
-		int val = s.read();
-		System.out.println(val + " value");
-//		if(val == 4) {
-//			System.out.println(s.read());
-//		}
-//		System.out.println("here");
-		
-		String command = Constants.COMMANDS[val];
-		System.out.println(command);
+	private void handleInput(SocketConnection s, MessagePackage msg) throws IOException, ClassNotFoundException {
+		String command = Constants.COMMANDS[msg.getCommand()];
 		switch(command) {
 		case "add": // Add new file
-			System.out.println("add called");
-			add_file(s);
+			add_file(s, msg);
 			break;
 		case "read": // Read file
-			System.out.println("read called");
-			read_file(s);
+			read_file(s, msg);
 			break;
 		case "delete": // Delete file
+			delete_file(s, msg);
 			break;
 		case "new_minion": // new minion connection
 			break;
@@ -87,31 +83,32 @@ public class MasterServer {
 			break;
 		}
 	}
-	
 
 	/**
 	 * Adds a new file to the server
 	 * @param input
 	 * @throws IOException
+	 * @throws ClassNotFoundException 
 	 */
-	private void add_file(SocketConnection s) throws IOException {
-		String contents = getStringFromStream(s);
-		int newLine = contents.indexOf("\n");
-		String file_name = contents.substring(0, newLine).trim();
-		String file_contents = contents.substring(newLine + 1).trim();
-		files.put(file_name, file_contents);
-		
+	private void add_file(SocketConnection s, MessagePackage msg) {
+		String contents;
+			FileContents file = msg.getFileContents();
+			String file_name = new String(file.getName());
+			String file_contents = new String(file.getContents());
+			files.put(file_name, file_contents);
+	
 		// TODO
 	}
 
-	private void read_file(SocketConnection s) throws IOException {
-		String file_name = getStringFromStream(s).trim();
+	private void read_file(SocketConnection s, MessagePackage msg) throws IOException, ClassNotFoundException {
+		String file_name = msg.getMessage();
 		String contents = files.get(file_name);
+		if(contents == null) {
+			contents = "ERROR: File does not exist";
+		}
 		byte[] contents_bytes = contents.getBytes();
-		byte[] to_send = new byte[contents_bytes.length+1];
-		System.arraycopy(contents_bytes, 0, to_send, 1, contents_bytes.length);
-		to_send[0] = (byte)contents_bytes.length;
-		s.send(to_send);
+		FileContents file = new FileContents(file_name.getBytes(), contents.getBytes());
+		s.send(new MessagePackage(1, null, file));
 	}
 	
 	/**
@@ -119,15 +116,16 @@ public class MasterServer {
 	 * @param input
 	 * @throws IOException
 	 */
-	private void delete_file(SocketConnection s) throws IOException {
+	private void delete_file(SocketConnection s, MessagePackage msg) throws IOException {
 		// TODO second byte: get minion id
-		String file_name = getStringFromStream(s).trim();
-		String result = files.remove(file_name);
-		if(result == null) {
+		String file_name = msg.getMessage();
+		String contents = files.remove(file_name);
+		if(contents == null) {
+			contents = "ERROR: File does not exist";
 		}
-		else {
-			
-		}
+		FileContents file = new FileContents(file_name.getBytes(), contents.getBytes());
+		s.send(new MessagePackage(1, null, file));
+
 		// TODO notifyAll
 
 	}
@@ -137,12 +135,12 @@ public class MasterServer {
 //		// TODO
 //	}
 	
-	private String getStringFromStream(SocketConnection s) throws IOException {
-		int length = s.read();
-		byte[] arr = new byte[length];
-		s.read(arr,0,length);
-		return new String(arr);
-	}
+//	private String getStringFromStream(SocketConnection s) throws IOException {
+//		int length = s.read();
+//		byte[] arr = new byte[length];
+//		s.read(arr,0,length);
+//		return new String(arr);
+//	}
 	
 	
 
