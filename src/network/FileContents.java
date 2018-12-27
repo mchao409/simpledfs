@@ -1,4 +1,4 @@
-package simpledfs;
+package network;
 
 import java.io.Serializable;
 

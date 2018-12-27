@@ -2,8 +2,6 @@ package network;
 
 import java.io.IOException;
 
-import simpledfs.FileContents;
-
 public class Notify {
 
 	public static void addFile(SocketConnection s, FileContents f) {

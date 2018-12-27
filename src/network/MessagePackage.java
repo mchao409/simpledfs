@@ -2,8 +2,6 @@ package network;
 
 import java.io.Serializable;
 
-import simpledfs.FileContents;
-
 public class MessagePackage implements Serializable {
 	private FileContents file;
 	private String message;
