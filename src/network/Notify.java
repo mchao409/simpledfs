@@ -7,8 +7,6 @@ public class Notify {
 	public static void addFile(TCPConnection s, FileContents f) {
 		MessagePackage m = new MessagePackage(0, null, f);
 		s.send(m);
-
-
 	}
 	
 	public static byte[] readFile(TCPConnection s, String file_name) {

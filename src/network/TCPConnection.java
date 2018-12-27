@@ -4,8 +4,6 @@ import java.net.*;
 import java.io.*;
 
 public class TCPConnection {
-//	private String send_ip;
-//	private String send_port;
 	private Socket socket;
 	private ObjectOutputStream output_stream;
 	private ObjectInputStream input_stream;
@@ -14,11 +12,9 @@ public class TCPConnection {
 		this.socket = socket;
 		output_stream = new ObjectOutputStream(socket.getOutputStream());
 		input_stream = new ObjectInputStream(socket.getInputStream());
-		
-
 	}
 	
-	public boolean send(MessagePackage m){
+	public boolean send(MessagePackage m) {
 		try {
 			output_stream.writeObject(m);
 		} catch(IOException e) {
@@ -40,10 +36,4 @@ public class TCPConnection {
 	public int inputAvailable() throws IOException {
 		return input_stream.available();
 	}
-	
-//	public void read(byte[] arr, int start, int length) throws IOException {
-//		input_stream.read(arr,0,length);
-//	}
-	
-
 }

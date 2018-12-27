@@ -1,16 +1,14 @@
 package test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.io.IOException;
 import java.net.Socket;
 
 import org.junit.jupiter.api.Test;
 
+import master_server.MasterServer;
 import network.FileContents;
 import network.Notify;
 import network.TCPConnection;
-import server.MasterServer;
 
 class testMasterServer {
 

@@ -1,10 +1,11 @@
-package server;
+package master_server;
 import java.io.*;
 import java.util.*;
 
 import network.FileContents;
 import network.MessagePackage;
 import network.TCPConnection;
+import server.TCPServer;
 
 import java.net.*;
 import java.nio.file.Files;
@@ -12,71 +13,18 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class MasterServer {
-	private int startingPort;
+public class MasterServer extends TCPServer {
 	private HashMap<String, String> files;
 	private HashSet<String> file_names;
+	private final String DB_PATH = "src/server_db/";
 
-	public MasterServer(int startingPort) throws IOException {
-		this.startingPort = startingPort;
+	public MasterServer(int port) throws IOException {
+		super(port);
 		files = new HashMap<String, String>();
 		file_names = new HashSet<String>();
 	}
 	
-	public void start() {
-		Thread t = new Thread(() -> {
-			try {
-				listen();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		});
-		t.start();
-	}
-	
-	/**
-	 * Listens for incoming connections to the server
-	 * @throws IOException
-	 */
-	private void listen() throws IOException {
-		ServerSocket client_listener = new ServerSocket(startingPort);
-        try {
-            while(true) {
-                Socket socket = client_listener.accept();
-                Thread t = new Thread(() -> {
-                    try {
-                    	TCPConnection s = new TCPConnection(socket);
-                    	MessagePackage msg;
-                    	while(true) {
-                    		try {
-                          		 msg = (MessagePackage) s.read();
-                         		if(msg == null) {
-                         			continue;
-                         		}
-                         		handleInput(s, msg);
-                    		} catch (EOFException | SocketException e) {
-                    			// socket disconnected
-                    			System.out.println("disconnect");
-                    			break;
-                    		}
-                    	}
-                    } catch(SocketException e) {
-                    	System.out.println("disconnect");
-                    } catch(IOException e) {
-                    	e.printStackTrace();
-                    } catch (ClassNotFoundException e) {
-						e.printStackTrace();
-					}
-                });
-                t.start();
-            }
-        }
-        finally {
-            client_listener.close();
-        }
-	}
-	
-	private void handleInput(TCPConnection s, MessagePackage msg) throws IOException, ClassNotFoundException {
+	protected void handleInput(TCPConnection s, MessagePackage msg) throws IOException {
 		String command = Constants.COMMANDS[msg.getCommand()];
 		switch(command) {
 		case "add": // Add new file
@@ -106,7 +54,7 @@ public class MasterServer {
 		if(file_names.contains(file_name)) {
 			// TODO handle
 		}
-		Files.write(Paths.get("src/server_db/" + file_name), file.getContents());
+		Files.write(Paths.get(DB_PATH + file_name), file.getContents());
 		file_names.add(file_name);
 		// TODO
 	}
@@ -114,9 +62,9 @@ public class MasterServer {
 	/**
 	 * Sends the the contents of a file
 	 */
-	private void read_file(TCPConnection s, MessagePackage msg) throws IOException, ClassNotFoundException {
+	private void read_file(TCPConnection s, MessagePackage msg) throws IOException {
 		String file_name = msg.getMessage();
-		String path = "src/server_db/" + file_name;
+		String path = DB_PATH + file_name;
 		File f = new File(path);
 		byte[] contents = null;
 		try {
@@ -136,7 +84,7 @@ public class MasterServer {
 	private void delete_file(TCPConnection s, MessagePackage msg) throws IOException {
 		// TODO second byte: get minion id
 		String file_name = msg.getMessage();
-		String path = "src/server_db/" + file_name;
+		String path = DB_PATH + file_name;
 		File f = new File(path);
 		byte[] contents = null;
 		try {
@@ -156,15 +104,6 @@ public class MasterServer {
 //		String file_name = input.readLine();
 //		// TODO
 //	}
-	
-//	private String getStringFromStream(SocketConnection s) throws IOException {
-//		int length = s.read();
-//		byte[] arr = new byte[length];
-//		s.read(arr,0,length);
-//		return new String(arr);
-//	}
-	
-	
 
     public static void main(String[] args) throws IOException {
     	MasterServer master = new MasterServer(9095);
