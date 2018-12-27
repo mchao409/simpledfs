@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import network.FileContents;
 import network.Notify;
-import network.SocketConnection;
+import network.TCPConnection;
 import server.MasterServer;
 
 class TestNotify {
@@ -34,7 +34,7 @@ class TestNotify {
 		try {
 			Thread.sleep(1000); // give time for server to start
 			
-			SocketConnection connection = new SocketConnection(new Socket("127.0.0.1", 8999));
+			TCPConnection connection = new TCPConnection(new Socket("127.0.0.1", 8999));
 			File f = new File("src/test/resources/file2");
 			byte[] file_contents = Files.readAllBytes(f.toPath());
 			Notify.addFile(connection, new FileContents("testing".getBytes(), file_contents));
@@ -45,16 +45,11 @@ class TestNotify {
 			assertTrue(Arrays.equals(resp,  file_contents));
 			resp = Notify.readFile(connection, "testing");
 			assertFalse(Arrays.equals(resp, file_contents));
-			
-			
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		
-		
 	}
-
 }

@@ -4,7 +4,7 @@ import java.util.*;
 
 import network.FileContents;
 import network.MessagePackage;
-import network.SocketConnection;
+import network.TCPConnection;
 
 import java.net.*;
 import java.nio.file.Files;
@@ -38,14 +38,14 @@ public class MasterServer {
 	 * Listens for incoming connections to the server
 	 * @throws IOException
 	 */
-	private void listen() throws IOException{
+	private void listen() throws IOException {
 		ServerSocket client_listener = new ServerSocket(startingPort);
         try {
             while(true) {
                 Socket socket = client_listener.accept();
                 Thread t = new Thread(() -> {
                     try {
-                    	SocketConnection s = new SocketConnection(socket);
+                    	TCPConnection s = new TCPConnection(socket);
                     	MessagePackage msg;
                     	while(true) {
                     		try {
@@ -54,14 +54,15 @@ public class MasterServer {
                          			continue;
                          		}
                          		handleInput(s, msg);
-                    		} catch (EOFException e) {
+                    		} catch (EOFException | SocketException e) {
                     			// socket disconnected
+                    			System.out.println("disconnect");
                     			break;
                     		}
- 
                     	}
-                    } 
-                    	catch(IOException e) {
+                    } catch(SocketException e) {
+                    	System.out.println("disconnect");
+                    } catch(IOException e) {
                     	e.printStackTrace();
                     } catch (ClassNotFoundException e) {
 						e.printStackTrace();
@@ -75,7 +76,7 @@ public class MasterServer {
         }
 	}
 	
-	private void handleInput(SocketConnection s, MessagePackage msg) throws IOException, ClassNotFoundException {
+	private void handleInput(TCPConnection s, MessagePackage msg) throws IOException, ClassNotFoundException {
 		String command = Constants.COMMANDS[msg.getCommand()];
 		switch(command) {
 		case "add": // Add new file
@@ -99,38 +100,29 @@ public class MasterServer {
 	/**
 	 * Adds a new file to the server
 	 */
-	private void add_file(SocketConnection s, MessagePackage msg) {
+	private void add_file(TCPConnection s, MessagePackage msg) throws IOException {
 		FileContents file = msg.getFileContents();
 		String file_name = new String(file.getName());
 		if(file_names.contains(file_name)) {
 			// TODO handle
 		}
-		if(file_name.contains(" " )) {
-			// TODO handle
-		}
-		try {
-			Files.write(Paths.get("src/server_db/" + file_name), file.getContents());
-			file_names.add(file_name);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
+		Files.write(Paths.get("src/server_db/" + file_name), file.getContents());
+		file_names.add(file_name);
 		// TODO
 	}
 
 	/**
 	 * Sends the the contents of a file
 	 */
-	private void read_file(SocketConnection s, MessagePackage msg) throws IOException, ClassNotFoundException {
+	private void read_file(TCPConnection s, MessagePackage msg) throws IOException, ClassNotFoundException {
 		String file_name = msg.getMessage();
 		String path = "src/server_db/" + file_name;
 		File f = new File(path);
-		byte[] contents;
+		byte[] contents = null;
 		try {
 			contents = Files.readAllBytes(f.toPath());
 		} catch (NoSuchFileException e) {
 			// TODO deal with this
-			contents = "ERROR: File does not exist".getBytes();
 		} 
 		FileContents file = new FileContents(file_name.getBytes(), contents);
 		s.send(new MessagePackage(1, null, file));
@@ -141,23 +133,21 @@ public class MasterServer {
 	 * @param input
 	 * @throws IOException
 	 */
-	private void delete_file(SocketConnection s, MessagePackage msg) throws IOException {
+	private void delete_file(TCPConnection s, MessagePackage msg) throws IOException {
 		// TODO second byte: get minion id
 		String file_name = msg.getMessage();
 		String path = "src/server_db/" + file_name;
 		File f = new File(path);
-		byte[] contents;
+		byte[] contents = null;
 		try {
 			contents = Files.readAllBytes(f.toPath());
 			if(!f.delete()) throw new NoSuchFileException(path);
 			file_names.remove(file_name);
 		} catch (NoSuchFileException e) {
-			// TODO deal with this
-			contents = "ERROR: File does not exist".getBytes();
+
 		} 
 		FileContents file = new FileContents(file_name.getBytes(), contents);
 		s.send(new MessagePackage(1, null, file));
-
 		// TODO notifyAll
 
 	}
