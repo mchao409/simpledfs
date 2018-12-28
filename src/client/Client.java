@@ -43,24 +43,26 @@ public class Client {
 		if(path.equals("###")) return;
 		byte[] file_contents = null;
 		try {
-			File f = new File("src/test/resources/test1");
+			File f = new File(path);
 			file_contents = Files.readAllBytes(f.toPath());	
 		} catch(IOException e) {
 			System.out.println("An error occurred when reading the file from your disk");
+			return;
 		}
 		
 		System.out.println("Enter a valid name for the file on the system, or ### to go back");
 		String name = scan.nextLine();
 		if(name.equals("###")) return;
-		Notify.addFile(master_connection, new FileContents(name.getBytes(), file_contents));
+		String resp = new String(Notify.addFile(master_connection, new FileContents(name.getBytes(), file_contents)));
+		System.out.println(resp);
 	}
 	
 	private void promptReadFile() throws IOException {
 		System.out.println("Enter the name of the file you would like to read, or ### to go back");
 		String file_name = scan.nextLine().trim();
 		byte[] resp = Notify.readFile(master_connection, file_name);
-		if(resp == null) System.out.println("The file could not be found");
-		System.out.println(new String(resp));
+		if (resp == null) System.out.println("The file could not be found");
+		else System.out.println(new String(resp));
 		
 	}
 	
@@ -70,11 +72,14 @@ public class Client {
 		byte[] resp = Notify.deleteFile(master_connection, file_name);
 		if(resp == null) System.out.println("The file could not be found");
 		else System.out.println(new String(resp));
-
 	}
 	
 
-    public static void main(String[] args) throws IOException {
-    	Client c = new Client(9095);
+    public static void main(String[] args) {
+    	try {
+        	Client c = new Client(7999);
+    	} catch(IOException e) {
+    		System.out.println("An error occurred, please try again later.");
+    	}
     }
 }

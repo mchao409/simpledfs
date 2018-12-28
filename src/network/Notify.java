@@ -3,41 +3,49 @@ package network;
 import java.io.IOException;
 
 public class Notify {
+	
 
-	public static void addFile(TCPConnection s, FileContents f) {
+	public static byte[] addFile(TCPConnection s, FileContents f) {
 		MessagePackage m = new MessagePackage(0, null, f);
 		s.send(m);
+		MessagePackage resp;
+		try {
+			resp = (MessagePackage) s.read();
+		} catch(IOException e) {
+			return "An error occurred while adding your file".getBytes();
+		}
+		return resp.getMessage().getBytes();
+		
 	}
 	
 	public static byte[] readFile(TCPConnection s, String file_name) {
-		try {
 			MessagePackage m = new MessagePackage(1,file_name, null);
 			s.send(m);
-			MessagePackage resp = (MessagePackage) s.read();
+			MessagePackage resp;
+			try {
+				resp = (MessagePackage) s.read();
+			} catch(IOException e) {
+				return "An error occurred and your file could not be read".getBytes();
+			}
 			FileContents file = resp.getFileContents();
 			return file.getContents();
-		} catch (IOException e) {
-			e.printStackTrace();
-			return "An error occured when reading the file".getBytes();
-		}
 	}
 	
 	public static byte[] deleteFile(TCPConnection s, String file_name) {
-		try {
 			MessagePackage m = new MessagePackage(2,file_name, null);
 			s.send(m);
-			MessagePackage resp = (MessagePackage) s.read();
+			MessagePackage resp;
+			try {
+				resp = (MessagePackage) s.read();
+			} catch(IOException e) {
+				return "An error occurred while deleting your file".getBytes();
+			}
 			FileContents file = resp.getFileContents();
+			if(file == null) {
+				return resp.getMessage().getBytes();
+			}
 			return file.getContents();
-		} catch (IOException e) {
-			e.printStackTrace();
-			return "An error occurred while deleting the file".getBytes();
-		}
-	}
-	
-	public static void sendMessage(TCPConnection s, String msg, int command) {
-		MessagePackage m = new MessagePackage(command, msg, null);
-		s.send(m);
+		
 	}
 	
 }

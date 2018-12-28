@@ -16,45 +16,44 @@ public abstract class TCPServer {
 		this.port = port;
 	}
 	
-	public void start() throws IOException {
-		listen();
-	}
-	
 	/**
 	 * Listens for incoming connections to the server
 	 * @throws IOException
 	 */
-	protected void listen() throws IOException {
+	public void listen() throws IOException {
 		ServerSocket listener = new ServerSocket(port);
+		System.out.println("Listening on port " + port);
         try {
-            while(true) {
+            while(true) { 
+            	// Listen forever for incoming connections
             	Socket socket;
             	try {
                     socket = listener.accept(); // TODO handle potential IOException
             	} catch(IOException e) {
             		continue;
             	}
-                Thread t = new Thread(() -> {
+                Thread t = new Thread(() -> { 
+                	// Listen forever to socket connection
                     try {
                     	TCPConnection s = new TCPConnection(socket);
                     	MessagePackage msg;
-                    	while(true) {
+                    	while(true) { 
                     		try {
                           		 msg = (MessagePackage) s.read();
                          		if(msg == null) {
                          			continue;
                          		}
-                         		handleInput(s, msg);
+                         		handle_input(s, msg);
                     		} catch (EOFException | SocketException e) {
                     			// socket disconnected
-                    			System.out.println("Disconnect");
+                    			System.out.println("Disconnected");
                     			break;
                     		}
                     	}
                     } catch(SocketException e) {
-                    	System.out.println("Disconnect");
+                    	System.out.println("Disconnected");
                     } catch(IOException e) {
-                    	e.printStackTrace();
+//                    	e.printStackTrace();
                     }
                 });
                 t.start();
@@ -65,5 +64,11 @@ public abstract class TCPServer {
         }
 	}
 	
-	protected abstract void handleInput(TCPConnection s, MessagePackage msg) throws IOException;
+	/**
+	 * Handle the message sent to the server
+	 * @param s
+	 * @param msg
+	 * @throws IOException
+	 */
+	protected abstract void handle_input(TCPConnection s, MessagePackage msg) throws IOException;
 }
