@@ -6,7 +6,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 
-import network.MessagePackage;
+import message.FileContentsPackage;
+import message.MessagePackage;
 import network.TCPConnection;
 
 public abstract class TCPServer {

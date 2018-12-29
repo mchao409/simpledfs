@@ -52,8 +52,8 @@ class TestDisconnect {
 
 		Thread.sleep(1000);
 		s = new Socket("127.0.0.1", 8999);
-		TCPConnection connect = new TCPConnection(s);
-		Notify.addFile(connect, new FileContents("testing".getBytes(), "stuff".getBytes()));
+		Notify n = new Notify();
+		n.add_file(new FileContents("testing".getBytes(), "stuff".getBytes()));
 		s.close();
 	}
 }

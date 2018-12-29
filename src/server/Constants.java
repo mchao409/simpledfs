@@ -1,7 +1,7 @@
 package server;
 
 public class Constants {
-	public static final String[] COMMANDS = {"add", "read", "delete", "new_minion", "client"};
+	public static final String[] COMMANDS = {"add", "read", "delete", "new_slave", "client"};
 	
 	
 	public static final String ADD_SUCCESS = "//ADDSUCCESS//";

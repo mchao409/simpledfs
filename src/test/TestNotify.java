@@ -52,21 +52,21 @@ class TestNotify {
 		try {
 			Thread.sleep(1000); // give time for server to start
 			
-			TCPConnection connection = new TCPConnection(new Socket("127.0.0.1", 8999));
 			File f = new File("src/test/resources/file2");
 			byte[] file_contents = Files.readAllBytes(f.toPath());
-			Notify.addFile(connection, new FileContents("testing".getBytes(), file_contents));
-			byte[] resp = Notify.readFile(connection, "testing");
+			Notify n = new Notify();
+			n.add_file(new FileContents("testing".getBytes(), file_contents));
+			byte[] resp = n.read_file("testing");
 			assertTrue(Arrays.equals(resp,  file_contents));
 			
-			resp = Notify.deleteFile(connection, "testing");
+			resp = n.delete_file("testing");
 			assertTrue(Arrays.equals(resp,  file_contents));
-			resp = Notify.readFile(connection, "testing");
+			resp = n.read_file("testing");
 			assertFalse(Arrays.equals(resp, file_contents));
 			
 			// Ensure exceptions are handled properly
-			resp = Notify.deleteFile(connection, "should_not_exist");			
-			resp = Notify.readFile(connection, "should_not_exist");
+			resp = n.delete_file("should_not_exist");			
+			resp = n.read_file("should_not_exist");
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail();

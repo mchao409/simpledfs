@@ -1,6 +1,9 @@
 package network;
 
 import java.net.*;
+
+import message.MessagePackage;
+
 import java.io.*;
 
 public class TCPConnection {
@@ -36,9 +39,18 @@ public class TCPConnection {
 	public int inputAvailable() throws IOException {
 		return input_stream.available();
 	}
-	@Override
-	public boolean equals(Object other) {
-		if(!(other instanceof TCPConnection)) return false;
-		return ((TCPConnection)other).socket == socket;
+	
+	public String getRemoteAddr() {
+		return socket.getInetAddress().toString().substring(1);
+	}
+	
+	public int getRemotePort() {
+		System.out.println(socket.getRemoteSocketAddress());
+		return socket.getPort();
+	}
+	
+	public boolean hasSameRemote(TCPConnection other) {
+		return other.socket.getInetAddress().equals(socket.getInetAddress()) 
+				&& other.socket.getPort() == socket.getPort();
 	}
 }
