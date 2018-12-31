@@ -99,7 +99,6 @@ public class SlaveServer extends TCPServer {
 	 * Sends the the contents of a file
 	 */
 	private void read_file(TCPConnection s, FileContentsPackage msg) throws IOException {
-		System.out.println("here");
 		String file_name = msg.getMessage();
 		String path = DB_PATH + file_name;
 		File f = new File(path);

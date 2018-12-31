@@ -17,9 +17,11 @@ public class TCPConnection {
 		input_stream = new ObjectInputStream(socket.getInputStream());
 	}
 	
-	public boolean send(MessagePackage m) {
+	public synchronized boolean send(MessagePackage m) {
 		try {
-			output_stream.writeObject(m);
+			synchronized(output_stream) {
+				output_stream.writeObject(m);
+			}
 		} catch(IOException e) {
 			e.printStackTrace();
 			return false;
@@ -27,7 +29,7 @@ public class TCPConnection {
 		return true;
 	}
 	
-	public Object read() throws IOException {
+	public synchronized Object read() throws IOException {
 		try {
 			return input_stream.readObject();
 		} catch (ClassNotFoundException e) {
@@ -36,7 +38,7 @@ public class TCPConnection {
 		}
 	}
 	
-	public int inputAvailable() throws IOException {
+	public synchronized int inputAvailable() throws IOException {
 		return input_stream.available();
 	}
 	

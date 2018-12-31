@@ -26,15 +26,17 @@ public class Notify {
 				return null;
 			}
 		}
-		master.send(new QueryPackage(4));
-		try {
-			SlaveInfoPackage slave_info = (SlaveInfoPackage) master.read();
-			
-			return slave_info;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
+		synchronized(master) {
+			master.send(new QueryPackage(4));
+			try {
+				SlaveInfoPackage slave_info = (SlaveInfoPackage) master.read();
+				
+				return slave_info;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return null;
+			}
 		}
 	}
 	
@@ -47,6 +49,7 @@ public class Notify {
 			FileContentsPackage resp = (FileContentsPackage) connect.read();
 			return resp.getMessage().getBytes();
 		} catch(IOException | NullPointerException e) {
+			e.printStackTrace();
 			return "An error occurred while adding your file".getBytes();
 		}		
 	}
@@ -60,6 +63,7 @@ public class Notify {
 			FileContents file = resp.getFileContents();
 			return file.getContents();
 		} catch(IOException |NullPointerException  e) {
+			e.printStackTrace();
 			return "An error occurred and your file could not be read".getBytes();
 		}
 	}
@@ -73,6 +77,7 @@ public class Notify {
 				connect.send(m);
 				resp = (FileContentsPackage) connect.read();
 			} catch(IOException e) {
+				e.printStackTrace();
 				return "An error occurred while deleting your file".getBytes();
 			}
 			FileContents file = resp.getFileContents();

@@ -92,7 +92,7 @@ public class MasterServer extends TCPServer {
 		}
 		FileContents file = msg.getFileContents();
 		String file_name = new String(file.getName());
-		synchronized(file_names) { // TODO synchronized
+		synchronized(file_names) { 
 			if(file_names.contains(file_name)) {
 				slave.send(new FileContentsPackage(0,Constants.FILE_ALREADY_EXISTS, null));
 			}
@@ -119,11 +119,15 @@ public class MasterServer extends TCPServer {
 		synchronized(file_names) {
 			if(file_names.contains(file_name)) {
 				file_names.remove(file_name);
-				slave.send(new FileContentsPackage(2, Constants.DELETE_SUCCESS, new FileContents(file_name.getBytes(), null)));
+				synchronized(slave) {
+					slave.send(new FileContentsPackage(2, Constants.DELETE_SUCCESS, new FileContents(file_name.getBytes(), null)));
+				}
 				notifyAllExcept(slave, msg);
 			}
 			else {
-				slave.send(new FileContentsPackage(2, Constants.FILE_DOES_NOT_EXIST, null));
+				synchronized(slave) {
+					slave.send(new FileContentsPackage(2, Constants.FILE_DOES_NOT_EXIST, null));
+				}
 			}
 		}
 	}
