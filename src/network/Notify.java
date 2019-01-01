@@ -11,21 +11,15 @@ import message.SlaveInfoPackage;
 public class Notify {
 	private TCPConnection master;
 	
-//	public Notify(String master_address, int master_port) throws IOException  {
-//		master = new TCPConnection(new Socket(master_address, master_port));
-//	}
-	
-	public Notify() {}
-	
-	private SlaveInfoPackage query_for_slave() {
-		if(master == null) {
-			try {
-				master = new TCPConnection(new Socket("127.0.0.1", 9000));
-			} catch(IOException e) {
-				e.printStackTrace();
-				return null;
-			}
+	public Notify(String master_address, int master_port) {
+		try {
+			master = new TCPConnection(new Socket(master_address, master_port));
+		} catch(IOException e) {
+			e.printStackTrace();
 		}
+	}
+		
+	private SlaveInfoPackage query_for_slave() {
 		synchronized(master) {
 			master.send(new QueryPackage(4));
 			try {

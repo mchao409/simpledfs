@@ -22,34 +22,6 @@ class TestNotify {
 
 	@Test
 	void test() throws InterruptedException {
-//		Thread t1 = new Thread(() -> {
-//			try {
-//				MasterServer m = new MasterServer(9000);
-//				m.listen();
-//			} catch (IOException e) {
-//				System.out.println("An error occurred when starting server");
-//				e.printStackTrace();
-//			}
-//		});
-//		t1.setDaemon(true);
-//		t1.start();		
-//		try {
-//			Thread.sleep(1000);
-//		} catch(InterruptedException e) {
-//			e.printStackTrace();
-//			fail();
-//		}
-//		
-//		Thread t2 = new Thread(() -> {
-//			try {
-//				SlaveServer slave = new SlaveServer(8999, "127.0.0.1", 9000);
-//				slave.listen();
-//			} catch(IOException e) {
-//				System.out.println("An error occurred in the server");
-//			}
-//		});
-//		t2.setDaemon(true);
-//		t2.start();
 		Main m = new Main();
 		m.startAllServers();
 		
@@ -58,7 +30,7 @@ class TestNotify {
 			
 			File f = new File("src/test/resources/file2");
 			byte[] file_contents = Files.readAllBytes(f.toPath());
-			Notify n = new Notify();
+			Notify n = new Notify("127.0.0.1", 3000);
 			n.add_file(new FileContents("testing".getBytes(), file_contents));
 			byte[] resp = n.read_file("testing");
 			assertTrue(Arrays.equals(resp,  file_contents));

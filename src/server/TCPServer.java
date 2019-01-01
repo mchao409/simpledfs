@@ -12,7 +12,7 @@ import network.TCPConnection;
 
 public abstract class TCPServer {
 	protected int port;
-	
+	protected ServerSocket listener;
 	public TCPServer(int port) {
 		this.port = port;
 	}
@@ -22,7 +22,7 @@ public abstract class TCPServer {
 	 * @throws IOException
 	 */
 	public void listen() throws IOException {
-		ServerSocket listener = new ServerSocket(port);
+		listener = new ServerSocket(port);
 		System.out.println("Listening on port " + port);
         try {
             while(true) { 
@@ -63,6 +63,14 @@ public abstract class TCPServer {
         finally {
         	listener.close();
         }
+	}
+	
+	public void close() {
+		 try {
+			listener.close();
+		 } catch (IOException e) {
+			 e.printStackTrace();
+		 }
 	}
 	
 	/**

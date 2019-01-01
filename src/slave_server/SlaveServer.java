@@ -33,6 +33,7 @@ public class SlaveServer extends TCPServer {
 		try {
 			master = new TCPConnection(new Socket(master_ip, master_port));
 		} catch(IOException e) {
+			e.printStackTrace();
 			System.out.println("No connection to master server, try again.");
 			return;
 		}

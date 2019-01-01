@@ -14,7 +14,7 @@ public class Client {
 		Socket master = new Socket("127.0.0.1", masterPort);
 		master_connection = new TCPConnection(master);
 		scan = new Scanner(System.in);
-		notify = new Notify();
+		notify = new Notify("127.0.0.1", masterPort);
 		prompt();
 	}
 	
