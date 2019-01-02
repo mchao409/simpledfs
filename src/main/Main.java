@@ -12,8 +12,8 @@ public class Main {
 	public int slave_starting_port;
 	public int master_port;
 	public String master_ip;
-	
 	private List<TCPServer> servers;
+	
 	public Main(int num_slave, int slave_starting_port, int master_port, String master_ip) {
 		this.num_slave = num_slave;
 		this.slave_starting_port = slave_starting_port;
@@ -33,7 +33,7 @@ public class Main {
 				servers.add(m);
 				m.listen();
 			} catch (IOException e) {
-				System.out.println("An error occurred when starting server");
+				System.out.println("An error occurred in the server");
 				e.printStackTrace();
 			}
 		});
@@ -64,11 +64,10 @@ public class Main {
 		}
 		try {
 			Thread.sleep(1000);
-
 		} catch(InterruptedException e) {
 			e.printStackTrace();
-			return;
-		}	
+		}
+
 	}
 	
 	public String getMasterIP() {
@@ -80,8 +79,27 @@ public class Main {
 	}
 	
 	public void closeAllServers() {
+		try {
+			Thread.sleep(1000);
+
+		} catch(InterruptedException e) {
+			e.printStackTrace();
+			return;
+		}	
 		for(TCPServer server: servers) {
 			server.close();
 		}
+		try {
+			Thread.sleep(1000);
+
+		} catch(InterruptedException e) {
+			e.printStackTrace();
+			return;
+		}	
+	}
+	
+	public static void main(String[] args) {
+		Main m = new Main(1, 2000, 3000, "127.0.0.1");
+		m.startAllServers();
 	}
 }

@@ -47,7 +47,6 @@ public class TCPConnection {
 	}
 	
 	public int getRemotePort() {
-		System.out.println(socket.getRemoteSocketAddress());
 		return socket.getPort();
 	}
 	

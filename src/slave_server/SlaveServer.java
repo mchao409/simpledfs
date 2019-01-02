@@ -1,8 +1,10 @@
 package slave_server;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
@@ -11,19 +13,20 @@ import java.util.HashSet;
 import message.FileContentsPackage;
 import message.MessagePackage;
 import message.QueryPackage;
-import message.SlaveInfoPackage;
+import message.TCPServerInfoPackage;
 import server.Constants;
 import server.TCPServer;
 import network.FileContents;
 import network.Notify;
 import network.TCPConnection;
+import network.TCPServerInfo;
 
 public class SlaveServer extends TCPServer {
 	private String master_ip;
 	private int master_port;
 	private TCPConnection master;
 	private HashSet<String> file_paths;
-	private final String DB_PATH = "src/server_db/";
+	private String DB_PATH;
 	
 	public SlaveServer(int port, String master_ip, int master_port) {
 		super(port);
@@ -37,8 +40,9 @@ public class SlaveServer extends TCPServer {
 			System.out.println("No connection to master server, try again.");
 			return;
 		}
+		DB_PATH = "src/server_db" + port + "/";
+		new File(DB_PATH).mkdir();
 		get_server_data();
-		listen_to_master();
 	}
 	
 	/**
@@ -46,30 +50,38 @@ public class SlaveServer extends TCPServer {
 	 */
 	private void get_server_data() {
 		// Send master an initial query to get all the server data
-		master.send(new QueryPackage(3, new SlaveInfoPackage(3,"127.0.0.1", port))); // TODO fix ip
-	}
-	
-	/**
-	 * Continuously listens to master for incoming changes
-	 */
-	private void listen_to_master() {
-		// continuously listen to master
+		master.send(new TCPServerInfoPackage(3, new TCPServerInfo("127.0.0.1", port))); // TODO fix ip
 	}
 	
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
 		String command = Constants.COMMANDS[msg.getCommand()];
 		switch(command) {
-		case "add": // Add new file
+		case "add": // notification from master to add new file
 			add_file(s, (FileContentsPackage)msg);
 			break;
-		case "read": // Read file
+			
+		case "read": // notification from master to read file
 			read_file(s, (FileContentsPackage) msg);
 			break;
-		case "delete": // Delete file
+			
+		case "delete": // notification from master to elete file
 			delete_file(s, (FileContentsPackage)msg);
 			break;
-		case "client": 
+		
+		case "print_all":  // used for debugging
+			System.out.println(file_paths);
 			break;
+		
+		case "add_master":
+			FileContents file_to_add = ((FileContentsPackage)msg).getFileContents();
+			add_file_to_db(file_to_add);
+			break;
+			
+		case "delete_master":
+			FileContents file_to_delete = ((FileContentsPackage)msg).getFileContents();
+			delete_file_from_db(file_to_delete);
+			break;
+			
 		default: 
 			break;
 		}
@@ -79,23 +91,32 @@ public class SlaveServer extends TCPServer {
 	 * Adds a new file to the server
 	 */
 	private void add_file(TCPConnection s, FileContentsPackage msg) throws IOException {
+		FileContentsPackage resp;
+		synchronized(master) {
+			msg.addSender(new TCPServerInfo("127.0.0.1", port));
 			master.send(msg);
-			FileContentsPackage resp = (FileContentsPackage) master.read();
-			FileContents file = resp.getFileContents();
+			resp = (FileContentsPackage) master.read();
+		}
+
+		FileContents file = resp.getFileContents();
+		if(resp.getMessage().equals(Constants.ADD_SUCCESS)) {
+			add_file_to_db(file);
 			String file_name = new String(file.getName());
-			Files.write(Paths.get(DB_PATH + file_name), file.getContents());
-			synchronized(file_paths) {
-				file_paths.add(file_name);
-			}
-			if(resp.getMessage().equals(Constants.ADD_SUCCESS)) {
-				s.send(new FileContentsPackage(0, "File successfully added", null));
-			}
-			else {
-				s.send(new FileContentsPackage(0, "File could not be added", null));
-			}
-			// TODO send response to s
+			s.send(new FileContentsPackage(0, "File successfully added", null));
+		}
+		else {
+			s.send(new FileContentsPackage(0, "File could not be added", null));
+		}
 	}
 
+	private void add_file_to_db(FileContents file) throws IOException {
+		String file_name = new String(file.getName());
+		Files.write(Paths.get(DB_PATH + file_name), file.getContents());
+		synchronized(file_paths) {
+			file_paths.add(file_name);
+		}
+	}
+	
 	/**
 	 * Sends the the contents of a file
 	 */
@@ -119,8 +140,12 @@ public class SlaveServer extends TCPServer {
 	 * @throws IOException
 	 */
 	private void delete_file(TCPConnection s, FileContentsPackage msg) throws IOException {
-		master.send(msg);
-		FileContentsPackage resp = (FileContentsPackage) master.read();
+		FileContentsPackage resp;
+		synchronized(master) {
+			msg.addSender(new TCPServerInfo("127.0.0.1", port));
+			master.send(msg);
+			resp = (FileContentsPackage) master.read();
+		}
 		String message = resp.getMessage();
 		if(message.equals(Constants.FILE_DOES_NOT_EXIST)) {
 			s.send(new FileContentsPackage(2, "The file you chose does not exist", null));
@@ -128,16 +153,23 @@ public class SlaveServer extends TCPServer {
 		else if (message.equals(Constants.DELETE_SUCCESS)) {
 			FileContents file = resp.getFileContents();
 			String file_name = new String(file.getName());
-			String path = DB_PATH + file_name;
-			File f = new File(path);
-			byte[] contents = Files.readAllBytes(f.toPath());
-			f.delete();
-			synchronized(file_paths) {
-				file_paths.remove(file_name);
-			}
+//			String path = DB_PATH + file_name;
+//			File f = new File(path);
+			byte[] contents = delete_file_from_db(file);
+//			f.delete();
 			s.send(new FileContentsPackage(2, null, new FileContents(file_name.getBytes(), contents)));
 		}
 		else s.send(null); // TODO handle
+	}
+	
+	private byte[] delete_file_from_db(FileContents file) throws IOException {
+		String file_name = new String(file.getName());
+		String path = DB_PATH + file_name;
+		File f = new File(path);
+		byte[] contents = Files.readAllBytes(f.toPath());
+		f.delete();
+		file_paths.remove(file_name);
+		return contents;
 	}
 	
 	public static void main(String[] args) throws IOException {

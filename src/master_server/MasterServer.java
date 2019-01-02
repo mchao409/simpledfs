@@ -5,9 +5,10 @@ import java.util.*;
 import message.FileContentsPackage;
 import message.MessagePackage;
 import message.QueryPackage;
-import message.SlaveInfoPackage;
+import message.TCPServerInfoPackage;
 import network.FileContents;
 import network.TCPConnection;
+import network.TCPServerInfo;
 import server.Constants;
 import server.TCPServer;
 
@@ -21,22 +22,19 @@ public class MasterServer extends TCPServer {
 	/**
 	 * Set of all file paths stored
 	 */
-	private HashSet<String> file_names;
-	
-	private HashMap<TCPConnection, SlaveInfoPackage> slaves;
+	private HashSet<String> file_names;	
 
 	/**
 	 * Maps from TCPConnection to a slave server to an Integer representing the number of clients the slave 
 	 * server is handling currently
 	 */
-	private HashMap<TCPConnection, Integer> num_connects;
+	private HashMap<TCPServerInfo, Integer> num_connects;
 	
 
 	public MasterServer(int port) throws IOException {
 		super(port);
 		file_names = new HashSet<String>();
-		num_connects = new HashMap<TCPConnection, Integer>();
-		slaves = new HashMap<TCPConnection, SlaveInfoPackage>();
+		num_connects = new HashMap<TCPServerInfo, Integer>();
 	}
 	
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
@@ -51,14 +49,15 @@ public class MasterServer extends TCPServer {
 			break;
 			
 		case "new_slave": // new minion connection
-			new_slave(s, (QueryPackage) msg);
+			new_slave(s, (TCPServerInfoPackage) msg);
 			break;
 			
 		case "client": // initial client query
 			client_initial_query(s, msg);
 			break;
 			
-		case "get_all_files":
+		case "print_all":
+			System.out.println(file_names);
 			break;
 			
 		default: 
@@ -71,11 +70,21 @@ public class MasterServer extends TCPServer {
 	 * @param ignore
 	 * @param msg
 	 */
-	private void notifyAllExcept(TCPConnection ignore, MessagePackage msg) {
+	private void notifyAllExceptSender(FileContentsPackage msg) {
 		// Needs to be tested
-		for(TCPConnection slave : num_connects.keySet()) {
-			if(slave.hasSameRemote(ignore)) continue;
-			slave.send(msg);
+		TCPServerInfo sender = msg.getSenderOfPackage();
+		for(TCPServerInfo slave : num_connects.keySet()) {
+			Thread t = new Thread(() -> {
+				if(!sender.equals(slave)) {
+					try  {
+						TCPConnection to_send = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
+						to_send.send(msg);
+					} catch(IOException e) {
+						e.printStackTrace();
+					}
+				}
+			});
+			t.start();
 		}
 	}
 
@@ -98,7 +107,7 @@ public class MasterServer extends TCPServer {
 			}
 			else {
 				file_names.add(file_name);
-				notifyAllExcept(slave, msg);
+				notifyAllExceptSender(new FileContentsPackage(6,null, file, msg.getSenderOfPackage()));
 				slave.send(new FileContentsPackage(0, Constants.ADD_SUCCESS, msg.getFileContents()));
 			}
 		}
@@ -122,7 +131,7 @@ public class MasterServer extends TCPServer {
 				synchronized(slave) {
 					slave.send(new FileContentsPackage(2, Constants.DELETE_SUCCESS, new FileContents(file_name.getBytes(), null)));
 				}
-				notifyAllExcept(slave, msg);
+				notifyAllExceptSender(new FileContentsPackage(7,null, new FileContents(file_name.getBytes(), null), msg.getSenderOfPackage()));
 			}
 			else {
 				synchronized(slave) {
@@ -132,23 +141,24 @@ public class MasterServer extends TCPServer {
 		}
 	}
 	
-	private void new_slave(TCPConnection slave, QueryPackage msg) {
+	private void new_slave(TCPConnection slave, TCPServerInfoPackage msg) {
 		assert msg.getCommand() == 3;
 		synchronized(num_connects) {
-			num_connects.put(slave, 0);
+			num_connects.put(msg.getServerInfo(), 0);
 		}
-		synchronized(slaves) {
-			slaves.put(slave, msg.getSlaveInfo());
-		}
+		// TODO
+//		synchronized(slaves) {
+//			slaves.put(slave, msg.getSlaveInfo());
+//		}
 		// TODO send slave information
 		
 	}
 	
 	private void client_initial_query(TCPConnection client, MessagePackage msg) {
-		TCPConnection min_connects = null;
+		TCPServerInfo min_connects = null;
 		int min = Integer.MAX_VALUE;
 		synchronized(num_connects) {
-			for(TCPConnection slave : num_connects.keySet()) {
+			for(TCPServerInfo slave : num_connects.keySet()) {
 				int curr_connects = num_connects.get(slave);
 				if(curr_connects < min) {
 					min = num_connects.get(slave);
@@ -156,10 +166,10 @@ public class MasterServer extends TCPServer {
 				}
 			}
 		}
-		SlaveInfoPackage resp = null;
-		synchronized(slaves) {
-			resp = slaves.get(min_connects);
-		}
+		TCPServerInfoPackage resp = new TCPServerInfoPackage(-1, min_connects);
+//		synchronized(slaves) {
+//			resp = slaves.get(min_connects);
+//		}
 		client.send(resp);
 	}
 	

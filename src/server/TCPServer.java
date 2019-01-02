@@ -53,8 +53,9 @@ public abstract class TCPServer {
                     	}
                     } catch(SocketException e) {
                     	System.out.println("Disconnected");
-                    } catch(IOException e) {
 //                    	e.printStackTrace();
+                    } catch(IOException e) {
+                    	e.printStackTrace();
                     }
                 });
                 t.start();

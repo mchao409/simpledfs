@@ -1,7 +1,8 @@
 package server;
 
 public class Constants {
-	public static final String[] COMMANDS = {"add", "read", "delete", "new_slave", "client"};
+	public static final String[] COMMANDS = {"add", "read", "delete", "new_slave", "client", 
+			"print_all", "add_master", "delete_master"};
 	
 	
 	public static final String ADD_SUCCESS = "//ADDSUCCESS//";

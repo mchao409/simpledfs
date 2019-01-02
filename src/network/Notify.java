@@ -6,7 +6,7 @@ import java.net.UnknownHostException;
 
 import message.QueryPackage;
 import message.FileContentsPackage;
-import message.SlaveInfoPackage;
+import message.TCPServerInfoPackage;
 
 public class Notify {
 	private TCPConnection master;
@@ -19,11 +19,11 @@ public class Notify {
 		}
 	}
 		
-	private SlaveInfoPackage query_for_slave() {
+	private TCPServerInfoPackage query_for_slave() {
 		synchronized(master) {
 			master.send(new QueryPackage(4));
 			try {
-				SlaveInfoPackage slave_info = (SlaveInfoPackage) master.read();
+				TCPServerInfoPackage slave_info = (TCPServerInfoPackage) master.read();
 				
 				return slave_info;
 			} catch (IOException e) {
@@ -36,8 +36,9 @@ public class Notify {
 	
 	public byte[] add_file(FileContents f) {
 		try {
-			SlaveInfoPackage slave = query_for_slave();
-			TCPConnection connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
+			TCPServerInfoPackage slave = query_for_slave();
+			TCPServerInfo slave_info = slave.getServerInfo();
+			TCPConnection connect = new TCPConnection(new Socket(slave_info.getAddress(), slave_info.getPort()));
 			FileContentsPackage m = new FileContentsPackage(0, null, f);
 			connect.send(m);
 			FileContentsPackage resp = (FileContentsPackage) connect.read();
@@ -50,8 +51,9 @@ public class Notify {
 	
 	public byte[] read_file(String file_name) {
 		try {
-			SlaveInfoPackage slave = query_for_slave();
-			TCPConnection connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
+			TCPServerInfoPackage slave = query_for_slave();
+			TCPServerInfo slave_info = slave.getServerInfo();
+			TCPConnection connect = new TCPConnection(new Socket(slave_info.getAddress(), slave_info.getPort()));
 			connect.send(new FileContentsPackage(1, file_name, null));
 			FileContentsPackage resp = (FileContentsPackage) connect.read();
 			FileContents file = resp.getFileContents();
@@ -63,11 +65,12 @@ public class Notify {
 	}
 	
 	public byte[] delete_file(String file_name) {
-			SlaveInfoPackage slave = query_for_slave();
+			TCPServerInfoPackage slave = query_for_slave();
+			TCPServerInfo slave_info = slave.getServerInfo();
 			FileContentsPackage m = new FileContentsPackage(2,file_name, null);
 			FileContentsPackage resp;
 			try {
-				TCPConnection connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
+				TCPConnection connect = new TCPConnection(new Socket(slave_info.getAddress(), slave_info.getPort()));
 				connect.send(m);
 				resp = (FileContentsPackage) connect.read();
 			} catch(IOException e) {
@@ -79,7 +82,16 @@ public class Notify {
 				return resp.getMessage().getBytes();
 			}
 			return file.getContents();
-		
+	}
+	
+	public void printAll(int slave_port) {
+		try  {
+			TCPConnection connect = new TCPConnection(new Socket("127.0.0.1", slave_port));
+			QueryPackage m = new QueryPackage(5);
+			connect.send(m);
+		} catch(IOException e ) {
+			e.printStackTrace();
+		}
 	}
 	
 }
