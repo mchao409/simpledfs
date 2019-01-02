@@ -25,4 +25,17 @@ public class TCPServerInfo implements Serializable {
 		TCPServerInfo other_server = (TCPServerInfo) other;
 		return other_server.address.equals(address) && other_server.port == port;
 	}
+	
+	@Override
+	public int hashCode() {
+		return address.hashCode() + port;
+	}
+	
+	
+	
+	@Override
+	public String toString() {
+		return "" + address + " " + port;
+	}
+	
 }

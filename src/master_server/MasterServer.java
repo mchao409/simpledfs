@@ -40,11 +40,11 @@ public class MasterServer extends TCPServer {
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
 		String command = Constants.COMMANDS[msg.getCommand()];
 		switch(command) {
-		case "add": // notification from slave server
+		case "add": // notification from slave server that a client wishes to add
 			add_file(s, (FileContentsPackage)msg);
 			break;
 			
-		case "delete": // notification from slave server
+		case "delete": // notification from slave server that a client wishes to delete
 			delete_file(s,(FileContentsPackage)msg);
 			break;
 			
@@ -60,6 +60,16 @@ public class MasterServer extends TCPServer {
 			System.out.println(file_names);
 			break;
 			
+		case "handling_client": // notification that slave is handling a client
+			TCPServerInfoPackage slave = (TCPServerInfoPackage) msg;
+			String message = slave.getMessage();
+			if(message.equals(Constants.HANDLING_CLIENT)) {
+				num_connects.put(slave.getServerInfo(), num_connects.get(slave.getServerInfo()) + 1);
+			}
+			else if (message.equals(Constants.DONE_HANDLING_CLIENT)){
+				num_connects.put(slave.getServerInfo(), num_connects.get(slave.getServerInfo())-1);
+			}
+			break;
 		default: 
 			break;
 		}

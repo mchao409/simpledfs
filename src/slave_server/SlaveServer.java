@@ -27,12 +27,15 @@ public class SlaveServer extends TCPServer {
 	private TCPConnection master;
 	private HashSet<String> file_paths;
 	private String DB_PATH;
+	private TCPServerInfo slave_info;
 	
 	public SlaveServer(int port, String master_ip, int master_port) {
 		super(port);
 		this.master_ip = master_ip;
 		this.master_port = master_port;
 		file_paths = new HashSet<String>();
+		slave_info = new TCPServerInfo("127.0.0.1", port);
+		
 		try {
 			master = new TCPConnection(new Socket(master_ip, master_port));
 		} catch(IOException e) {
@@ -56,15 +59,15 @@ public class SlaveServer extends TCPServer {
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
 		String command = Constants.COMMANDS[msg.getCommand()];
 		switch(command) {
-		case "add": // notification from master to add new file
+		case "add": // notification from client to add a file
 			add_file(s, (FileContentsPackage)msg);
 			break;
 			
-		case "read": // notification from master to read file
+		case "read": // notification from client to read a file
 			read_file(s, (FileContentsPackage) msg);
 			break;
 			
-		case "delete": // notification from master to elete file
+		case "delete": // notification from client to delete a file
 			delete_file(s, (FileContentsPackage)msg);
 			break;
 		
@@ -72,18 +75,27 @@ public class SlaveServer extends TCPServer {
 			System.out.println(file_paths);
 			break;
 		
-		case "add_master":
+		case "add_master": // notification from master a file has been added to the system
 			FileContents file_to_add = ((FileContentsPackage)msg).getFileContents();
 			add_file_to_db(file_to_add);
 			break;
 			
-		case "delete_master":
+		case "delete_master": // notification from master a file has been deleted from the system
 			FileContents file_to_delete = ((FileContentsPackage)msg).getFileContents();
 			delete_file_from_db(file_to_delete);
 			break;
 			
-		default: 
+		default:  // should never be called
 			break;
+		}
+	}
+	
+	private void notify_master_client(boolean starting) {
+		if(starting) {
+			master.send(new TCPServerInfoPackage(8, Constants.HANDLING_CLIENT, slave_info));
+		}
+		else {
+			master.send(new TCPServerInfoPackage(8, Constants.DONE_HANDLING_CLIENT, slave_info));
 		}
 	}
 
@@ -91,6 +103,7 @@ public class SlaveServer extends TCPServer {
 	 * Adds a new file to the server
 	 */
 	private void add_file(TCPConnection s, FileContentsPackage msg) throws IOException {
+		notify_master_client(true);
 		FileContentsPackage resp;
 		synchronized(master) {
 			msg.addSender(new TCPServerInfo("127.0.0.1", port));
@@ -107,6 +120,7 @@ public class SlaveServer extends TCPServer {
 		else {
 			s.send(new FileContentsPackage(0, "File could not be added", null));
 		}
+		notify_master_client(false);
 	}
 
 	private void add_file_to_db(FileContents file) throws IOException {
@@ -121,6 +135,7 @@ public class SlaveServer extends TCPServer {
 	 * Sends the the contents of a file
 	 */
 	private void read_file(TCPConnection s, FileContentsPackage msg) throws IOException {
+		notify_master_client(true);
 		String file_name = msg.getMessage();
 		String path = DB_PATH + file_name;
 		File f = new File(path);
@@ -132,6 +147,7 @@ public class SlaveServer extends TCPServer {
 		} 
 		FileContents file = new FileContents(file_name.getBytes(), contents);
 		s.send(new FileContentsPackage(1, null, file));
+		notify_master_client(false);
 	}
 
 	/**
@@ -140,6 +156,7 @@ public class SlaveServer extends TCPServer {
 	 * @throws IOException
 	 */
 	private void delete_file(TCPConnection s, FileContentsPackage msg) throws IOException {
+		notify_master_client(true);
 		FileContentsPackage resp;
 		synchronized(master) {
 			msg.addSender(new TCPServerInfo("127.0.0.1", port));
@@ -160,6 +177,7 @@ public class SlaveServer extends TCPServer {
 			s.send(new FileContentsPackage(2, null, new FileContents(file_name.getBytes(), contents)));
 		}
 		else s.send(null); // TODO handle
+		notify_master_client(false);
 	}
 	
 	private byte[] delete_file_from_db(FileContents file) throws IOException {
