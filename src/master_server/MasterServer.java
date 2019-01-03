@@ -76,19 +76,19 @@ public class MasterServer extends TCPServer {
 	}
 	
 	/**
-	 * Send a message to all slave servers except for the one indicated
-	 * @param ignore
+	 * Send a message to all slave servers except for the one indicated in the argument
+	 * @param ignore_sender a package containing information about the sender to ignore
 	 * @param msg
 	 */
-	private void notifyAllExceptSender(FileContentsPackage msg) {
+	private void notifyAllExceptSender(FileContentsPackage ignore_sender) {
 		// Needs to be tested
-		TCPServerInfo sender = msg.getSenderOfPackage();
+		TCPServerInfo sender = ignore_sender.getSenderOfPackage();
 		for(TCPServerInfo slave : num_connects.keySet()) {
 			Thread t = new Thread(() -> {
 				if(!sender.equals(slave)) {
 					try  {
 						TCPConnection to_send = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
-						to_send.send(msg);
+						to_send.send(ignore_sender);
 					} catch(IOException e) {
 						e.printStackTrace();
 					}

@@ -82,6 +82,10 @@ public class SlaveServer extends TCPServer {
 			FileContents file_to_delete = ((FileContentsPackage)msg).getFileContents();
 			delete_file_from_db(file_to_delete);
 			break;
+		
+		case "get_data": // send data about all files over
+			
+			break;
 			
 		default:  // should never be called
 			break;
@@ -175,10 +179,7 @@ public class SlaveServer extends TCPServer {
 		else if (message.equals(Constants.DELETE_SUCCESS)) {
 			FileContents file = resp.getFileContents();
 			String file_name = new String(file.getName());
-//			String path = DB_PATH + file_name;
-//			File f = new File(path);
 			byte[] contents = delete_file_from_db(file);
-//			f.delete();
 			s.send(new FileContentsPackage(2, null, new FileContents(file_name.getBytes(), contents)));
 		}
 		else s.send(null); // TODO handle

@@ -7,6 +7,10 @@ import master_server.MasterServer;
 import server.TCPServer;
 import slave_server.SlaveServer;
 
+/**
+ * Main class for starting servers
+ *
+ */
 public class Main {
 	public int num_slave;
 	public int slave_starting_port;
@@ -26,6 +30,10 @@ public class Main {
 		this(1, 2000, 3000, "127.0.0.1");
 	}
 	
+	public Main(int numSlaves) {
+		this(numSlaves,2000,3000, "127.0.0.1");
+	}
+
 	public void startAllServers() {
 		Thread master = new Thread(() -> {
 			try {
@@ -70,7 +78,7 @@ public class Main {
 
 	}
 	
-	public String getMasterIP() {
+	public String getMasterAddress() {
 		return master_ip;
 	}
 	

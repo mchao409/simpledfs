@@ -43,11 +43,23 @@ class TestNotify {
 			resp = n.delete_file("testing");
 			assertFalse(Arrays.equals(resp, file_contents));
 
-			
 			// Ensure exceptions are handled properly
 			resp = n.delete_file("should_not_exist");			
 			resp = n.read_file("should_not_exist");
 			
+			// Repeat with other three methods
+			n.add_file("testing", file_contents);
+			resp = n.read_file("testing", "127.0.0.1", 2000);
+			assertTrue(Arrays.equals(resp,  file_contents));
+			
+			resp = n.delete_file("testing", "127.0.0.1", 2000);
+			assertTrue(Arrays.equals(resp,  file_contents));
+			resp = n.read_file("testing", "127.0.0.1", 2000);
+			assertFalse(Arrays.equals(resp, file_contents));
+			
+			resp = n.delete_file("testing", "127.0.0.1", 2000);
+			assertFalse(Arrays.equals(resp, file_contents));
+
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail();
