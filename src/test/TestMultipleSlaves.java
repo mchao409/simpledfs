@@ -10,7 +10,7 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
-import main.Main;
+import main.RunServers;
 import network.Notify;
 
 class TestMultipleSlaves {
@@ -18,7 +18,7 @@ class TestMultipleSlaves {
 	@Test
 	void testAllSlavesHaveAllFiles() throws IOException {
 		int num_slaves = 3;
-		Main m = new Main(num_slaves);
+		RunServers m = new RunServers(num_slaves);
 		m.startAllServers();
 		try {
 			Thread.sleep(500);
@@ -87,8 +87,6 @@ class TestMultipleSlaves {
 		});
 		t3.start();
 		t4.start();
-
-		
 		
 	}
 

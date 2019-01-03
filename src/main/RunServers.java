@@ -11,14 +11,14 @@ import slave_server.SlaveServer;
  * Main class for starting servers
  *
  */
-public class Main {
+public class RunServers {
 	public int num_slave;
 	public int slave_starting_port;
 	public int master_port;
 	public String master_ip;
 	private List<TCPServer> servers;
 	
-	public Main(int num_slave, int slave_starting_port, int master_port, String master_ip) {
+	public RunServers(int num_slave, int slave_starting_port, int master_port, String master_ip) {
 		this.num_slave = num_slave;
 		this.slave_starting_port = slave_starting_port;
 		this.master_port = master_port;
@@ -26,11 +26,11 @@ public class Main {
 		servers = new ArrayList<TCPServer>();
 	}
 	
-	public Main() {
+	public RunServers() {
 		this(1, 2000, 3000, "127.0.0.1");
 	}
 	
-	public Main(int numSlaves) {
+	public RunServers(int numSlaves) {
 		this(numSlaves,2000,3000, "127.0.0.1");
 	}
 
@@ -107,7 +107,7 @@ public class Main {
 	}
 	
 	public static void main(String[] args) {
-		Main m = new Main(1, 2000, 3000, "127.0.0.1");
+		RunServers m = new RunServers(1, 2000, 3000, "127.0.0.1");
 		m.startAllServers();
 	}
 }

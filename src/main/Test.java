@@ -10,7 +10,7 @@ import network.Notify;
 public class Test {
 
 	public static void main(String[] args) throws InterruptedException, IOException {
-		Main m = new Main(2, 2000, 3000, "127.0.0.1");
+		RunServers m = new RunServers(2, 2000, 3000, "127.0.0.1");
 		m.startAllServers();
 		Thread.sleep(1000);
 		Notify n = new Notify("127.0.0.1", 3000);

@@ -11,7 +11,7 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
-import main.Main;
+import main.RunServers;
 import master_server.MasterServer;
 import network.FileContents;
 import network.Notify;
@@ -22,7 +22,7 @@ class TestNotify {
 
 	@Test
 	void test() throws InterruptedException {
-		Main m = new Main();
+		RunServers m = new RunServers();
 		m.startAllServers();
 		
 		try {

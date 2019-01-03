@@ -12,7 +12,7 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
-import main.Main;
+import main.RunServers;
 import message.FileContentsPackage;
 import message.QueryPackage;
 import message.TCPServerInfoPackage;
@@ -25,7 +25,7 @@ class TestSlaveServer {
 	@Test
 	void testConcurrency() throws InterruptedException {
 		// start servers
-		Main m = new Main(1,2000,3000, "127.0.0.1");
+		RunServers m = new RunServers(1,2000,3000, "127.0.0.1");
 		m.startAllServers();
 		
 		Thread.sleep(1000);
@@ -65,7 +65,7 @@ class TestSlaveServer {
 	}
 	@Test
 	void testSeveralSlaves() throws InterruptedException {
-		Main m = new Main(2, 2000, 3000, "127.0.0.1");
+		RunServers m = new RunServers(2, 2000, 3000, "127.0.0.1");
 		m.startAllServers();
 		m.closeAllServers();
 	}
