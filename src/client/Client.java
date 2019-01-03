@@ -54,7 +54,7 @@ public class Client {
 		System.out.println("Enter a valid name for the file on the system, or ### to go back");
 		String name = scan.nextLine();
 		if(name.equals("###")) return;
-		String resp = new String(notify.add_file(new FileContents(name.getBytes(), file_contents)));
+		String resp = new String(notify.add_file(name, file_contents));
 		System.out.println(resp);
 	}
 	

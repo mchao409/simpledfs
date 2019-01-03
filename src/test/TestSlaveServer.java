@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import main.Main;
 import message.FileContentsPackage;
 import message.QueryPackage;
-import message.SlaveInfoPackage;
+import message.TCPServerInfoPackage;
 import network.FileContents;
 import network.Notify;
 import network.TCPConnection;
@@ -35,8 +35,9 @@ class TestSlaveServer {
 			// add file
 			File f = new File("src/test/resources/file2");
 			file_contents = Files.readAllBytes(f.toPath());
-			n.add_file(new FileContents("testing".getBytes(), file_contents));
+			n.add_file("testing", file_contents);
 			byte[] resp = n.read_file("testing");
+			System.out.println("done read");
 			assertTrue(Arrays.equals(resp,  file_contents));
 
 			// Ensure no exceptions
@@ -52,17 +53,20 @@ class TestSlaveServer {
 		Thread read = new Thread(() -> {
 			Notify n = new Notify("127.0.0.1", 3000);
 			byte[] resp = n.read_file("testing");
+			System.out.println("done read");
+
 		});
 		read.start();
 		Notify n = new Notify("127.0.0.1", 3000);
 		byte[] resp = n.delete_file("testing");
+		System.out.println("done delete");
+
 		m.closeAllServers();
 	}
 	@Test
 	void testSeveralSlaves() throws InterruptedException {
 		Main m = new Main(2, 2000, 3000, "127.0.0.1");
 		m.startAllServers();
-		Thread.sleep(1000);
 		m.closeAllServers();
 	}
 }

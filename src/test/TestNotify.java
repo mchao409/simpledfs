@@ -31,7 +31,7 @@ class TestNotify {
 			File f = new File("src/test/resources/file2");
 			byte[] file_contents = Files.readAllBytes(f.toPath());
 			Notify n = new Notify("127.0.0.1", 3000);
-			n.add_file(new FileContents("testing".getBytes(), file_contents));
+			n.add_file("testing", file_contents);
 			byte[] resp = n.read_file("testing");
 			assertTrue(Arrays.equals(resp,  file_contents));
 			
@@ -40,9 +40,14 @@ class TestNotify {
 			resp = n.read_file("testing");
 			assertFalse(Arrays.equals(resp, file_contents));
 			
+			resp = n.delete_file("testing");
+			assertFalse(Arrays.equals(resp, file_contents));
+
+			
 			// Ensure exceptions are handled properly
 			resp = n.delete_file("should_not_exist");			
 			resp = n.read_file("should_not_exist");
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail();

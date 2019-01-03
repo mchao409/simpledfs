@@ -6,6 +6,9 @@ import message.MessagePackage;
 
 import java.io.*;
 
+/**
+ * Wrapper class for Socket with synchronous operations
+ */
 public class TCPConnection {
 	private Socket socket;
 	private ObjectOutputStream output_stream;
@@ -17,6 +20,9 @@ public class TCPConnection {
 		input_stream = new ObjectInputStream(socket.getInputStream());
 	}
 	
+	/**
+	 * Send a message to the socket
+	 */
 	public synchronized boolean send(MessagePackage m) {
 		try {
 			synchronized(output_stream) {
@@ -29,6 +35,9 @@ public class TCPConnection {
 		return true;
 	}
 	
+	/**
+	 * Read from the socket
+	 */
 	public synchronized Object read() throws IOException {
 		try {
 			return input_stream.readObject();
@@ -36,22 +45,5 @@ public class TCPConnection {
 			e.printStackTrace();
 			return null;
 		}
-	}
-	
-	public synchronized int inputAvailable() throws IOException {
-		return input_stream.available();
-	}
-	
-	public String getRemoteAddr() {
-		return socket.getInetAddress().toString().substring(1);
-	}
-	
-	public int getRemotePort() {
-		return socket.getPort();
-	}
-	
-	public boolean hasSameRemote(TCPConnection other) {
-		return other.socket.getInetAddress().equals(socket.getInetAddress()) 
-				&& other.socket.getPort() == socket.getPort();
 	}
 }
