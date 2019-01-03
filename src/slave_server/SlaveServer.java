@@ -1,10 +1,8 @@
 package slave_server;
 
-import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
@@ -90,6 +88,10 @@ public class SlaveServer extends TCPServer {
 		}
 	}
 	
+	/**
+	 * Notify master that the slave server is either begun or finished handling a client
+	 * @param starting
+	 */
 	private void notify_master_client(boolean starting) {
 		if(starting) {
 			master.send(new TCPServerInfoPackage(8, Constants.HANDLING_CLIENT, slave_info));
@@ -123,6 +125,9 @@ public class SlaveServer extends TCPServer {
 		notify_master_client(false);
 	}
 
+	/**
+	 * Save file to database
+	 */
 	private void add_file_to_db(FileContents file) throws IOException {
 		String file_name = new String(file.getName());
 		Files.write(Paths.get(DB_PATH + file_name), file.getContents());
@@ -180,6 +185,9 @@ public class SlaveServer extends TCPServer {
 		notify_master_client(false);
 	}
 	
+	/**
+	 * Delete file from database
+	 */
 	private byte[] delete_file_from_db(FileContents file) throws IOException {
 		String file_name = new String(file.getName());
 		String path = DB_PATH + file_name;

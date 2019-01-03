@@ -17,7 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-// TODO test notifyAll
+
 public class MasterServer extends TCPServer {
 	/**
 	 * Set of all file paths stored
@@ -151,6 +151,9 @@ public class MasterServer extends TCPServer {
 		}
 	}
 	
+	/**
+	 * Handle the starting up of a new slave server, sends necessary information to it
+	 */
 	private void new_slave(TCPConnection slave, TCPServerInfoPackage msg) {
 		assert msg.getCommand() == 3;
 		synchronized(num_connects) {
@@ -164,6 +167,9 @@ public class MasterServer extends TCPServer {
 		
 	}
 	
+	/**
+	 * Handle a client's initial query, send information about slave server to contact
+	 */
 	private void client_initial_query(TCPConnection client, MessagePackage msg) {
 		TCPServerInfo min_connects = null;
 		int min = Integer.MAX_VALUE;

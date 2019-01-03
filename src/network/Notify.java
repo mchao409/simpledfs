@@ -2,12 +2,15 @@ package network;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
 import message.QueryPackage;
 import message.FileContentsPackage;
 import message.TCPServerInfoPackage;
 
+/**
+ * API for communicating with remote file system
+ *
+ */
 public class Notify {
 	private TCPConnection master;
 	
@@ -18,14 +21,18 @@ public class Notify {
 			e.printStackTrace();
 		}
 	}
-		
-	private TCPServerInfoPackage query_for_slave() {
+	
+	/**
+	 * Query the master for the appropriate slave server to contact.
+	 * @return a TCPServerInfo object with information about the slave server
+	 */
+	private TCPServerInfo query_for_slave() {
 		synchronized(master) {
 			master.send(new QueryPackage(4));
 			try {
 				TCPServerInfoPackage slave_info = (TCPServerInfoPackage) master.read();
 				
-				return slave_info;
+				return slave_info.getServerInfo();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -33,11 +40,16 @@ public class Notify {
 			}
 		}
 	}
-	
-	public byte[] add_file(FileContents f) {
+	/**
+	 * Add a file to the file system
+	 * @param file_name the name of the file on the system
+	 * @param contents the contents of the file to be added
+	 * @return
+	 */
+	public byte[] add_file(String file_name, byte[] contents) {
 		try {
-			TCPServerInfoPackage slave = query_for_slave();
-			TCPServerInfo slave_info = slave.getServerInfo();
+			FileContents f = new FileContents(file_name.getBytes(), contents);
+			TCPServerInfo slave_info = query_for_slave();
 			TCPConnection connect = new TCPConnection(new Socket(slave_info.getAddress(), slave_info.getPort()));
 			FileContentsPackage m = new FileContentsPackage(0, null, f);
 			connect.send(m);
@@ -49,10 +61,15 @@ public class Notify {
 		}		
 	}
 	
+	/**
+	 * Read a file from the file system
+	 * @param file_name the name of the file to be read
+	 * @return a byte array containing the contents of the file, or a byte[] array representing an error message
+	 * if an error occurs
+	 */
 	public byte[] read_file(String file_name) {
 		try {
-			TCPServerInfoPackage slave = query_for_slave();
-			TCPServerInfo slave_info = slave.getServerInfo();
+			TCPServerInfo slave_info = query_for_slave();
 			TCPConnection connect = new TCPConnection(new Socket(slave_info.getAddress(), slave_info.getPort()));
 			connect.send(new FileContentsPackage(1, file_name, null));
 			FileContentsPackage resp = (FileContentsPackage) connect.read();
@@ -64,9 +81,14 @@ public class Notify {
 		}
 	}
 	
+	/**
+	 * Delete a file from the file system
+	 * @param file_name the name of the file to be deleted
+	 * @return a byte array containing the contents of the file, or a byte[] array representing an error message
+	 * if an error occurs
+	 */
 	public byte[] delete_file(String file_name) {
-			TCPServerInfoPackage slave = query_for_slave();
-			TCPServerInfo slave_info = slave.getServerInfo();
+			TCPServerInfo slave_info = query_for_slave();
 			FileContentsPackage m = new FileContentsPackage(2,file_name, null);
 			FileContentsPackage resp;
 			try {
@@ -84,6 +106,10 @@ public class Notify {
 			return file.getContents();
 	}
 	
+	/**
+	 * Currently used for testing
+	 * @param slave_port
+	 */
 	public void printAll(int slave_port) {
 		try  {
 			TCPConnection connect = new TCPConnection(new Socket("127.0.0.1", slave_port));
