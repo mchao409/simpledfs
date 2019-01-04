@@ -1,6 +1,7 @@
 package main;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import master_server.MasterServer;
@@ -16,67 +17,101 @@ public class RunServers {
 	public int slave_starting_port;
 	public int master_port;
 	public String master_ip;
-	private List<TCPServer> servers;
-	
-	public RunServers(int num_slave, int slave_starting_port, int master_port, String master_ip) {
-		this.num_slave = num_slave;
-		this.slave_starting_port = slave_starting_port;
-		this.master_port = master_port;
-		this.master_ip = master_ip;
-		servers = new ArrayList<TCPServer>();
-	}
+	private HashSet<Integer> slave_ports;
 	
 	public RunServers() {
-		this(1, 2000, 3000, "127.0.0.1");
+		slave_ports = new HashSet<Integer>();
 	}
 	
-	public RunServers(int numSlaves) {
-		this(numSlaves,2000,3000, "127.0.0.1");
-	}
-
-	public void startAllServers() {
+	public void start_master_server(String ip, int port) {
+		this.master_ip = ip;
+		this.master_port = port;
 		Thread master = new Thread(() -> {
-			try {
-				MasterServer m = new MasterServer(master_port);
-				servers.add(m);
-				m.listen();
+		try {
+			MasterServer m = new MasterServer(master_port);
+			m.listen();
+		} catch (IOException e) {
+			System.out.println("An error occurred in the server");
+			e.printStackTrace();
+		}
+		});
+		master.setDaemon(true);
+		master.start();
+	}
+	
+	public void start_one_slave_server(int port) {
+		if(master_ip == null) {
+			System.out.println("Master has not yet started");
+			return;
+		}
+		if(slave_ports.contains(port)) return;
+		Thread t = new Thread(() -> {
+			try {				
+				SlaveServer slave = new SlaveServer(port, master_ip, master_port);
+				slave.listen();
+				slave_ports.add(port);
 			} catch (IOException e) {
 				System.out.println("An error occurred in the server");
 				e.printStackTrace();
 			}
 		});
-		master.setDaemon(true);
-		master.start();
-		try {
-			Thread.sleep(1000);
+		t.setDaemon(true);
+		t.start();
+		slave_ports.add(port);
+	} 
+	
 
-		} catch(InterruptedException e) {
-			e.printStackTrace();
-			return;
+	
+	public void start_slave_servers(int starting_port, int num_slaves) throws InterruptedException {
+		for(int i = 0; i < num_slaves; i++) {
+			start_one_slave_server(starting_port + i);
+			Thread.sleep(500);
 		}
-		
-		for(int i = 0; i < num_slave; i++) {
-			final int k = i;
-			Thread t = new Thread(() -> {
-				try {				
-					SlaveServer slave = new SlaveServer(slave_starting_port + k, master_ip, master_port);
-					servers.add(slave);
-					slave.listen();
-				} catch (IOException e) {
-					System.out.println("An error occurred in the server");
-					e.printStackTrace();
-				}
-			});
-			t.setDaemon(true);
-			t.start();
-		}
-		try {
-			Thread.sleep(1000);
-		} catch(InterruptedException e) {
-			e.printStackTrace();
-		}
-
 	}
+	
+//	public void startAllServers() {
+//		Thread master = new Thread(() -> {
+//			try {
+//				MasterServer m = new MasterServer(master_port);
+//				servers.add(m);
+//				m.listen();
+//			} catch (IOException e) {
+//				System.out.println("An error occurred in the server");
+//				e.printStackTrace();
+//			}
+//		});
+//		master.setDaemon(true);
+//		master.start();
+//		try {
+//			Thread.sleep(1000);
+//
+//		} catch(InterruptedException e) {
+//			e.printStackTrace();
+//			return;
+//		}
+//		
+//		for(int i = 0; i < num_slave; i++) {
+//			final int k = i;
+//			Thread t = new Thread(() -> {
+//				try {				
+//					SlaveServer slave = new SlaveServer(slave_starting_port + k, master_ip, master_port);
+//					servers.add(slave);
+//					slave.listen();
+//				} catch (IOException e) {
+//					System.out.println("An error occurred in the server");
+//					e.printStackTrace();
+//				}
+//			});
+//			t.setDaemon(true);
+//			t.start();
+//		}
+//		try {
+//			Thread.sleep(1000);
+//		} catch(InterruptedException e) {
+//			e.printStackTrace();
+//		}
+//
+//	}
 	
 	public String getMasterAddress() {
 		return master_ip;
@@ -84,30 +119,5 @@ public class RunServers {
 	
 	public int getMasterPort() {
 		return master_port;
-	}
-	
-	public void closeAllServers() {
-		try {
-			Thread.sleep(1000);
-
-		} catch(InterruptedException e) {
-			e.printStackTrace();
-			return;
-		}	
-		for(TCPServer server: servers) {
-			server.close();
-		}
-		try {
-			Thread.sleep(1000);
-
-		} catch(InterruptedException e) {
-			e.printStackTrace();
-			return;
-		}	
-	}
-	
-	public static void main(String[] args) {
-		RunServers m = new RunServers(1, 2000, 3000, "127.0.0.1");
-		m.startAllServers();
 	}
 }

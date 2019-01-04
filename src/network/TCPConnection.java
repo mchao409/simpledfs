@@ -38,10 +38,13 @@ public class TCPConnection {
 	/**
 	 * Read from the socket
 	 */
-	public synchronized Object read() throws IOException {
+	public synchronized Object read() {
 		try {
 			return input_stream.readObject();
 		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			return null;
+		} catch(IOException e) {
 			e.printStackTrace();
 			return null;
 		}

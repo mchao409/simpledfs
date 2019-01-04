@@ -47,6 +47,7 @@ public abstract class TCPServer {
                          		handle_input(s, msg);
                     		} catch (EOFException | SocketException e) {
                     			// socket disconnected
+//                    			e.printStackTrace();
                     			System.out.println("Disconnected");
                     			break;
                     		}

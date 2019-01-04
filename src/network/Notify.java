@@ -18,7 +18,7 @@ public class Notify {
 		try {
 			master = new TCPConnection(new Socket(master_address, master_port));
 		} catch(IOException e) {
-			e.printStackTrace();
+			e.printStackTrace(); 
 		}
 	}
 	
@@ -29,14 +29,12 @@ public class Notify {
 	private TCPServerInfo query_for_slave() {
 		synchronized(master) {
 			master.send(new QueryPackage(4));
-			try {
-				TCPServerInfoPackage slave_info = (TCPServerInfoPackage) master.read();
-				
-				return slave_info.getServerInfo();
-			} catch (IOException e) {
-				e.printStackTrace();
-				return null;
+			TCPServerInfoPackage slave_info = (TCPServerInfoPackage) master.read();
+			if(slave_info == null) {
+				// TODO
 			}
+			return slave_info.getServerInfo();
+		
 		}
 	}
 	

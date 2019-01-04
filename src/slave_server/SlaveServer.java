@@ -10,6 +10,7 @@ import java.util.HashSet;
 
 import message.FileContentsPackage;
 import message.MessagePackage;
+import message.MultipleFilesPackage;
 import message.QueryPackage;
 import message.TCPServerInfoPackage;
 import server.Constants;
@@ -27,7 +28,7 @@ public class SlaveServer extends TCPServer {
 	private String DB_PATH;
 	private TCPServerInfo slave_info;
 	
-	public SlaveServer(int port, String master_ip, int master_port) {
+	public SlaveServer(int port, String master_ip, int master_port) throws IOException {
 		super(port);
 		this.master_ip = master_ip;
 		this.master_port = master_port;
@@ -40,18 +41,49 @@ public class SlaveServer extends TCPServer {
 			e.printStackTrace();
 			System.out.println("No connection to master server, try again.");
 			return;
-		}
+		} 
 		DB_PATH = "src/server_db" + port + "/";
 		new File(DB_PATH).mkdir();
+	}
+	
+	@Override() 
+	public void listen() {
+		Thread t = new Thread(() -> {
+			try {
+				super.listen();
+			} catch(IOException e) {
+				e.printStackTrace();
+			}
+		}); 
+		t.start();
+		
 		get_server_data();
+
 	}
 	
 	/**
 	 * Retrieves all of the files from another slave server
 	 */
-	private void get_server_data() {
+	private void get_server_data(){
 		// Send master an initial query to get all the server data
 		master.send(new TCPServerInfoPackage(3, new TCPServerInfo("127.0.0.1", port))); // TODO fix ip
+		TCPServerInfoPackage slave_to_get_from = (TCPServerInfoPackage) master.read();
+		TCPServerInfo slave = slave_to_get_from.getServerInfo();
+		if(slave == null) {
+			return;
+		}
+		try {
+			TCPConnection slave_connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
+			slave_connect.send(new TCPServerInfoPackage(9, slave_info));
+			MultipleFilesPackage pkg = (MultipleFilesPackage) slave_connect.read();
+			for(FileContents f : pkg) {
+				add_file_to_db(f); 
+			}
+		} catch(IOException e) {
+			System.out.println("Could not retrieve server data");
+		}
+
+		
 	}
 	
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
@@ -83,8 +115,8 @@ public class SlaveServer extends TCPServer {
 			delete_file_from_db(file_to_delete);
 			break;
 		
-		case "get_data": // send data about all files over
-			
+		case "get_all_files": // send data about all files over
+			get_all_files(s);
 			break;
 			
 		default:  // should never be called
@@ -198,6 +230,28 @@ public class SlaveServer extends TCPServer {
 		file_paths.remove(file_name);
 		return contents;
 	}
+	
+	/**
+	 * Send all db data
+	 * @param args
+	 * @throws IOException
+	 */
+	private void get_all_files(TCPConnection slave) {
+		MultipleFilesPackage pkg = new MultipleFilesPackage();
+		for(String file_name : file_paths) {
+			try {
+				String path = DB_PATH + file_name;
+				File f = new File(path);
+				byte[] contents = Files.readAllBytes(f.toPath());
+				pkg.addFile(new FileContents(file_name.getBytes(), contents));
+			} catch(IOException e) {
+				e.printStackTrace();
+			}
+		}
+		slave.send(pkg);
+
+	}
+	
 	
 	public static void main(String[] args) throws IOException {
 		SlaveServer m = new SlaveServer(7999, "127.0.0.1", 9095);

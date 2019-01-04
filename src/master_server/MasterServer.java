@@ -183,15 +183,7 @@ public class MasterServer extends TCPServer {
 	 */
 	private void client_initial_query(TCPConnection client, MessagePackage msg) {
 		TCPServerInfoPackage resp = new TCPServerInfoPackage(-1, get_least_occupied_slave(null));
-//		synchronized(slaves) {
-//			resp = slaves.get(min_connects);
-//		}
 		client.send(resp);
 	}
-	
 
-    public static void main(String[] args) throws IOException {
-    	MasterServer master = new MasterServer(9095);
-    	master.listen();
-    }
 }

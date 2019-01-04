@@ -10,9 +10,9 @@ import network.FileContents;
 public class MultipleFilesPackage extends MessagePackage implements Serializable, Iterable<FileContents>{
 	
 	List<FileContents> files;
-
+ 
 	public MultipleFilesPackage() {
-		super(9);
+		super(-1);
 		files = new ArrayList<FileContents>();
 	}
 	

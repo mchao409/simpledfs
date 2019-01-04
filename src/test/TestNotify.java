@@ -22,22 +22,25 @@ class TestNotify {
 
 	@Test
 	void test() throws InterruptedException {
+		int master_port = 9000;
+		int slave_starting_port = 8000;
 		RunServers m = new RunServers();
-		m.startAllServers();
+		m.start_master_server("127.0.0.1", master_port);
+		m.start_one_slave_server(slave_starting_port);
 		
 		try {
 			Thread.sleep(1000); // give time for server to start
 			
 			File f = new File("src/test/resources/file2");
 			byte[] file_contents = Files.readAllBytes(f.toPath());
-			Notify n = new Notify("127.0.0.1", 3000);
+			Notify n = new Notify("127.0.0.1", master_port);
 			n.add_file("testing", file_contents);
 			byte[] resp = n.read_file("testing");
 			assertTrue(Arrays.equals(resp,  file_contents));
 			
 			resp = n.delete_file("testing");
 			assertTrue(Arrays.equals(resp,  file_contents));
-			resp = n.read_file("testing");
+			resp = n.read_file("testing"); 
 			assertFalse(Arrays.equals(resp, file_contents));
 			
 			resp = n.delete_file("testing");
@@ -49,15 +52,15 @@ class TestNotify {
 			
 			// Repeat with other three methods
 			n.add_file("testing", file_contents);
-			resp = n.read_file("testing", "127.0.0.1", 2000);
+			resp = n.read_file("testing");
 			assertTrue(Arrays.equals(resp,  file_contents));
 			
-			resp = n.delete_file("testing", "127.0.0.1", 2000);
+			resp = n.delete_file("testing");
 			assertTrue(Arrays.equals(resp,  file_contents));
-			resp = n.read_file("testing", "127.0.0.1", 2000);
+			resp = n.read_file("testing");
 			assertFalse(Arrays.equals(resp, file_contents));
 			
-			resp = n.delete_file("testing", "127.0.0.1", 2000);
+			resp = n.delete_file("testing");
 			assertFalse(Arrays.equals(resp, file_contents));
 
 		} catch (IOException e) {

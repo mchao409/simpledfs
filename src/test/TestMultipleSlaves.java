@@ -16,10 +16,14 @@ import network.Notify;
 class TestMultipleSlaves {
 
 	@Test
-	void testAllSlavesHaveAllFiles() throws IOException {
+	void testAllSlavesHaveAllFiles() throws IOException, InterruptedException {
 		int num_slaves = 3;
-		RunServers m = new RunServers(num_slaves);
-		m.startAllServers();
+		int master_port = 9000;
+		int slave_starting_port = 8000;
+		RunServers m = new RunServers();
+		m.start_master_server("127.0.0.1", master_port);
+		m.start_slave_servers(slave_starting_port, num_slaves);
+		
 		try {
 			Thread.sleep(500);
 		} catch (InterruptedException e1) {
@@ -28,7 +32,7 @@ class TestMultipleSlaves {
 		}
 		File f1 = new File("src/test/resources/file2");
 		byte[] file_1 = Files.readAllBytes(f1.toPath());
-		Notify n = new Notify("127.0.0.1", 3000);
+		Notify n = new Notify("127.0.0.1", master_port);
 		Thread t1 = new Thread(() -> {
 			n.add_file("testing", file_1);
 		});
@@ -52,7 +56,7 @@ class TestMultipleSlaves {
 			byte[] resp = n.read_file("testing");
 			assertTrue(Arrays.equals(file_1, resp));
 			for(int i = 0; i < num_slaves; i++) {
-				resp = n.read_file("testing", "127.0.0.1", 2000 + i);
+				resp = n.read_file("testing", "127.0.0.1", slave_starting_port + i);
 				assertTrue(Arrays.equals(file_1, resp));
 			}
 			resp = n.delete_file("testing");
@@ -62,16 +66,16 @@ class TestMultipleSlaves {
 				fail();
 			}
 			for(int i = 0; i < num_slaves; i++) {
-				resp = n.read_file("testing", "127.0.0.1", 2000 + i);
+				resp = n.read_file("testing", "127.0.0.1", slave_starting_port + i);
 				assertFalse(Arrays.equals(resp, file_1));
 			}
 		});
-		
+		 
 		Thread t4 = new Thread(() -> {
 			byte[] resp = n.read_file("testing1");
 			assertTrue(Arrays.equals(file_2, resp));
 			for(int i = 0; i < num_slaves; i++) {
-				resp = n.read_file("testing1", "127.0.0.1", 2000 + i);
+				resp = n.read_file("testing1", "127.0.0.1", slave_starting_port + i);
 				assertTrue(Arrays.equals(file_2, resp));
 			}
 			resp = n.delete_file("testing1");
@@ -81,7 +85,7 @@ class TestMultipleSlaves {
 				fail();
 			}
 			for(int i = 0; i < num_slaves; i++) {
-				resp = n.read_file("testing1", "127.0.0.1", 2000 + i);
+				resp = n.read_file("testing1", "127.0.0.1", slave_starting_port + i);
 				assertFalse(Arrays.equals(resp, file_2));
 			}
 		});
