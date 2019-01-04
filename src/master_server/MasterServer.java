@@ -152,37 +152,37 @@ public class MasterServer extends TCPServer {
 	}
 	
 	/**
-	 * Handle the starting up of a new slave server, sends necessary information to it
+	 * Handle the starting up of a new slave server, redirects it to another slave to retrieve db info
 	 */
 	private void new_slave(TCPConnection slave, TCPServerInfoPackage msg) {
 		assert msg.getCommand() == 3;
 		synchronized(num_connects) {
 			num_connects.put(msg.getServerInfo(), 0);
 		}
-		// TODO
-//		synchronized(slaves) {
-//			slaves.put(slave, msg.getSlaveInfo());
-//		}
-		// TODO send slave information
+		slave.send(new TCPServerInfoPackage(-1, get_least_occupied_slave(msg.getServerInfo())));
 		
+	}
+	
+	private TCPServerInfo get_least_occupied_slave(TCPServerInfo ignore) {
+		TCPServerInfo min_connects = null;
+		int min = Integer.MAX_VALUE;
+		synchronized(num_connects) {
+			for(TCPServerInfo slave : num_connects.keySet()) {
+				int curr_connects = num_connects.get(slave);
+				if(curr_connects < min && !(ignore != null && ignore.equals(slave))) {
+					min = num_connects.get(slave);
+					min_connects = slave;
+				}
+			}
+		}
+		return min_connects;
 	}
 	
 	/**
 	 * Handle a client's initial query, send information about slave server to contact
 	 */
 	private void client_initial_query(TCPConnection client, MessagePackage msg) {
-		TCPServerInfo min_connects = null;
-		int min = Integer.MAX_VALUE;
-		synchronized(num_connects) {
-			for(TCPServerInfo slave : num_connects.keySet()) {
-				int curr_connects = num_connects.get(slave);
-				if(curr_connects < min) {
-					min = num_connects.get(slave);
-					min_connects = slave;
-				}
-			}
-		}
-		TCPServerInfoPackage resp = new TCPServerInfoPackage(-1, min_connects);
+		TCPServerInfoPackage resp = new TCPServerInfoPackage(-1, get_least_occupied_slave(null));
 //		synchronized(slaves) {
 //			resp = slaves.get(min_connects);
 //		}

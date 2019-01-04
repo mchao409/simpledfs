@@ -37,7 +37,6 @@ class TestSlaveServer {
 			file_contents = Files.readAllBytes(f.toPath());
 			n.add_file("testing", file_contents);
 			byte[] resp = n.read_file("testing");
-			System.out.println("done read");
 			assertTrue(Arrays.equals(resp,  file_contents));
 
 			// Ensure no exceptions
@@ -53,20 +52,12 @@ class TestSlaveServer {
 		Thread read = new Thread(() -> {
 			Notify n = new Notify("127.0.0.1", 3000);
 			byte[] resp = n.read_file("testing");
-			System.out.println("done read");
 
 		});
 		read.start();
 		Notify n = new Notify("127.0.0.1", 3000);
 		byte[] resp = n.delete_file("testing");
-		System.out.println("done delete");
 
-		m.closeAllServers();
-	}
-	@Test
-	void testSeveralSlaves() throws InterruptedException {
-		RunServers m = new RunServers(2, 2000, 3000, "127.0.0.1");
-		m.startAllServers();
 		m.closeAllServers();
 	}
 }
