@@ -251,11 +251,6 @@ public class SlaveServer extends TCPServer {
 		slave.send(pkg);
 
 	}
-	
-	
-	public static void main(String[] args) throws IOException {
-		SlaveServer m = new SlaveServer(7999, "127.0.0.1", 9095);
-		m.listen();
-	}
+
 	
 }

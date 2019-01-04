@@ -1,6 +1,7 @@
 package main;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -13,30 +14,31 @@ import slave_server.SlaveServer;
  *
  */
 public class RunServers {
-	public int num_slave;
-	public int slave_starting_port;
-	public int master_port;
-	public String master_ip;
-	private HashSet<Integer> slave_ports;
+	private int master_port;
+	private String master_ip;
+	private TCPServer master;
+	private HashMap<Integer, TCPServer> slaves;
+	
 	
 	public RunServers() {
-		slave_ports = new HashSet<Integer>();
+		slaves = new HashMap<Integer, TCPServer>();
 	}
 	
 	public void start_master_server(String ip, int port) {
 		this.master_ip = ip;
 		this.master_port = port;
-		Thread master = new Thread(() -> {
+		Thread master_thread = new Thread(() -> {
 		try {
 			MasterServer m = new MasterServer(master_port);
+			master = m;
 			m.listen();
 		} catch (IOException e) {
 			System.out.println("An error occurred in the server");
 			e.printStackTrace();
 		}
 		});
-		master.setDaemon(true);
-		master.start();
+		master_thread.setDaemon(true);
+		master_thread.start();
 	}
 	
 	public void start_one_slave_server(int port) {
@@ -44,12 +46,12 @@ public class RunServers {
 			System.out.println("Master has not yet started");
 			return;
 		}
-		if(slave_ports.contains(port)) return;
+		if(slaves.keySet().contains(port)) return;
 		Thread t = new Thread(() -> {
 			try {				
 				SlaveServer slave = new SlaveServer(port, master_ip, master_port);
 				slave.listen();
-				slave_ports.add(port);
+				slaves.put(port, slave);
 			} catch (IOException e) {
 				System.out.println("An error occurred in the server");
 				e.printStackTrace();
@@ -57,10 +59,7 @@ public class RunServers {
 		});
 		t.setDaemon(true);
 		t.start();
-		slave_ports.add(port);
 	} 
-	
-
 	
 	public void start_slave_servers(int starting_port, int num_slaves) throws InterruptedException {
 		for(int i = 0; i < num_slaves; i++) {
@@ -69,49 +68,21 @@ public class RunServers {
 		}
 	}
 	
-//	public void startAllServers() {
-//		Thread master = new Thread(() -> {
-//			try {
-//				MasterServer m = new MasterServer(master_port);
-//				servers.add(m);
-//				m.listen();
-//			} catch (IOException e) {
-//				System.out.println("An error occurred in the server");
-//				e.printStackTrace();
-//			}
-//		});
-//		master.setDaemon(true);
-//		master.start();
-//		try {
-//			Thread.sleep(1000);
-//
-//		} catch(InterruptedException e) {
-//			e.printStackTrace();
-//			return;
-//		}
-//		
-//		for(int i = 0; i < num_slave; i++) {
-//			final int k = i;
-//			Thread t = new Thread(() -> {
-//				try {				
-//					SlaveServer slave = new SlaveServer(slave_starting_port + k, master_ip, master_port);
-//					servers.add(slave);
-//					slave.listen();
-//				} catch (IOException e) {
-//					System.out.println("An error occurred in the server");
-//					e.printStackTrace();
-//				}
-//			});
-//			t.setDaemon(true);
-//			t.start();
-//		}
-//		try {
-//			Thread.sleep(1000);
-//		} catch(InterruptedException e) {
-//			e.printStackTrace();
-//		}
-//
-//	}
+	public void closeMaster() {
+		master.close();
+	}
+	
+	public void closeSlave(int port) {
+		if(slaves.keySet().contains(port)) {
+			slaves.get(port).close();
+		}
+	}
+	
+	public void closeAllSlaves() {
+		for(Integer port : slaves.keySet()) {
+			closeSlave(port);
+		}
+	}
 	
 	public String getMasterAddress() {
 		return master_ip;
