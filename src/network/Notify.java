@@ -46,6 +46,10 @@ public class Notify {
 	 */
 	public byte[] add_file(String file_name, byte[] contents) {
 		TCPServerInfo slave_info = query_for_slave();
+		if(slave_info == null) {
+			System.out.println("Your file could not be added");
+			return null;
+		}
 		return add_file(file_name, contents, slave_info.getAddress(), slave_info.getPort());
 	}
 	
