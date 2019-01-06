@@ -42,10 +42,10 @@ public class TCPConnection {
 		try {
 			return input_stream.readObject();
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 			return null;
 		} catch(IOException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 			return null;
 		}
 	}

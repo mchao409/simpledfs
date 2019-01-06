@@ -59,14 +59,15 @@ public class RunServers {
 		});
 		t.setDaemon(true);
 		t.start();
+
 	} 
 	
 	public void start_slave_servers(int starting_port, int num_slaves) {
 		for(int i = 0; i < num_slaves; i++) {
 			start_one_slave_server(starting_port + i);
 			try {
-				Thread.sleep(500);
-			} catch(InterruptedException e) {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
