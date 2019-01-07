@@ -1,4 +1,4 @@
-package master_server;
+package server.master_server;
 import java.io.*;
 import java.util.*;
 

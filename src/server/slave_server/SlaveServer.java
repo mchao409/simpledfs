@@ -1,4 +1,4 @@
-package slave_server;
+package server.slave_server;
 
 import java.io.File;
 import java.io.IOException;

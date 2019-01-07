@@ -12,11 +12,11 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import main.RunServers;
-import master_server.MasterServer;
 import network.FileContents;
 import network.Notify;
 import network.TCPConnection;
-import slave_server.SlaveServer;
+import server.master_server.MasterServer;
+import server.slave_server.SlaveServer;
 
 class TestNotify {
 
