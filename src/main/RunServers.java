@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-import master_server.MasterServer;
 import server.TCPServer;
-import slave_server.SlaveServer;
+import server.master_server.MasterServer;
+import server.slave_server.SlaveServer;
 
 /**
  * Main class for starting servers
