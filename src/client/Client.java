@@ -70,9 +70,10 @@ public class Client {
 	private void promptDeleteFile() throws IOException {
 		System.out.println("Enter the name of the file you would like to delete, or ### to go back");
 		String file_name = scan.nextLine();
-		byte[] resp = notify.delete_file(file_name);
-		if(resp == null) System.out.println("The file could not be found");
-		else System.out.println(new String(resp));
+		notify.delete_file(file_name);
+//		byte[] resp = notify.delete_file(file_name);
+//		if(resp == null) System.out.println("The file could not be found");
+//		else System.out.println(new String(resp));
 	}
 	
 

@@ -87,7 +87,6 @@ public class Notify {
 			}
 		}
 		return true;
-
 	}
 	
 	/**
@@ -152,9 +151,12 @@ public class Notify {
 	}
 	
 	
-	public byte[] delete_file(String file_name) {
-		TCPServerInfo slave_info = query_for_slave();
-		return delete_file(file_name, slave_info.getAddress(), slave_info.getPort());
+	
+	
+	public void delete_file(String file_name) {
+		master.send(new FileNamePackage(Constants.DELETE, file_name));
+//		TCPServerInfo slave_info = query_for_slave();
+//		return delete_file(file_name, slave_info.getAddress(), slave_info.getPort());
 	}
 	
 	/**

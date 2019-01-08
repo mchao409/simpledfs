@@ -2,6 +2,7 @@ package server.master_server.log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 import file.ChunkInterval;
@@ -14,7 +15,7 @@ public class FileLog {
 	 * Each key represents the starting location of the chunk with respect to its file
 	 * and maps to a list of servers that contain the chunk
 	 */	
-	private HashMap<Integer, List<TCPServerInfo>> chunk_locs;
+	public HashMap<Integer, List<TCPServerInfo>> chunk_locs;
 	
 	/**
 	 * Identifier for the file
@@ -42,7 +43,7 @@ public class FileLog {
 			chunk_locs.get(chunk_start).remove(slave);
 		}
 	}
-	
+		
 	@Override
 	public boolean equals(Object other) {
 		if(!(other instanceof FileLog)) return false;

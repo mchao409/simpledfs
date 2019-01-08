@@ -9,14 +9,19 @@ import network.TCPServerInfo;
 public class FileChunkInfoPackage extends MessagePackage {
 	private String identifier;
 	private int start;
-	private int end;
 	private TCPServerInfo slave;
 	
-	public FileChunkInfoPackage(String command, String identifier, int start, int end, TCPServerInfo slave) {
+	public FileChunkInfoPackage(String command, String identifier, int start) {
 		super(command);
 		this.identifier = identifier;
 		this.start = start;
-		this.end = end;
+	}
+	
+	
+	public FileChunkInfoPackage(String command, String identifier, int start, TCPServerInfo slave) {
+		this(command,identifier, start);
+		this.identifier = identifier;
+		this.start = start;
 		this.slave = slave;
 	}
 	
@@ -26,10 +31,6 @@ public class FileChunkInfoPackage extends MessagePackage {
 	
 	public int get_start() {
 		return start;
-	}
-	
-	public int get_end() {
-		return end;
 	}
 	
 	public TCPServerInfo get_slave() {

@@ -8,6 +8,7 @@ import message.FileContentsPackage;
 import message.MessagePackage;
 import message.QueryPackage;
 import message.TCPServerInfoPackage;
+import network.FileNamePackage;
 import network.FileContents;
 import network.TCPConnection;
 import network.TCPServerInfo;
@@ -59,9 +60,13 @@ public class MasterServer extends TCPServer {
 		case Constants.CHUNK_ADDED:
 			log_added_chunk((FileChunkInfoPackage) msg); // slave server notifies that it has added a chunk
 			break;
+		
+		case Constants.CHUNK_DELETED:
+			log_deleted_chunk((FileChunkInfoPackage) msg);
+			break;
 			
 		case Constants.DELETE: // notification from slave server that a client wishes to delete
-//			delete_file(s,(FileContentsPackage)msg);
+			delete_file(s,(FileNamePackage)msg);
 			break;
 			
 		case Constants.NEW_SLAVE: // new minion connection
@@ -95,16 +100,20 @@ public class MasterServer extends TCPServer {
 		}
 	}
 	
-	private void log_added_chunk(FileChunkInfoPackage pkg) {
-		System.out.println(pkg);
+	private synchronized void log_added_chunk(FileChunkInfoPackage pkg) {
 		String identifier = pkg.get_identifier();
-		synchronized(file_storage_data) {
-			if(file_storage_data.get(identifier) == null) {
-				FileLog f = new FileLog(identifier);
-				file_storage_data.put(identifier, f);
-			}
-			file_storage_data.get(identifier).add_chunk_location(pkg.get_start(), pkg.get_slave());
-			
+		if(file_storage_data.get(identifier) == null) {
+			FileLog f = new FileLog(identifier);
+			file_storage_data.put(identifier, f);
+		}
+		file_storage_data.get(identifier).add_chunk_location(pkg.get_start(), pkg.get_slave());
+	}
+	
+	private synchronized void log_deleted_chunk(FileChunkInfoPackage pkg) {
+		String identifier = pkg.get_identifier();
+		if(file_storage_data.get(identifier) != null) {
+			FileLog f = file_storage_data.get(identifier);
+			f.remove_slave_location(pkg.get_start(), pkg.get_slave());
 		}
 	}
 	
@@ -161,13 +170,30 @@ public class MasterServer extends TCPServer {
 	
 
 
-//	/**
-//	 * Handle a delete request to the file system
-//	 * @param slave the slave server that received the request from the client
-//	 * @param msg
-//	 * @throws IOException
-//	 */
-//	private void delete_file(TCPConnection slave, FileContentsPackage msg) throws IOException {
+	/**
+	 * Handle a delete request to the file system
+	 * @param slave the slave server that received the request from the client
+	 * @param msg
+	 * @throws IOException
+	 */
+	private synchronized void delete_file(TCPConnection client, FileNamePackage msg) throws IOException {
+		String identifier = msg.get_identifier();
+
+		FileLog log = file_storage_data.get(identifier);
+		if(log == null) {
+			System.out.println("File does not exist");
+			return;
+		}
+		
+		HashMap<Integer, List<TCPServerInfo>> chunk_locs = log.chunk_locs;
+		for(Integer start: chunk_locs.keySet()) {
+			List<TCPServerInfo> slaves = chunk_locs.get(start);
+			for(TCPServerInfo slave : slaves) {
+				TCPConnection connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
+				connect.send(new FileChunkInfoPackage(Constants.DELETE, identifier, start));
+			}
+		}
+		
 //		assert msg.getCommand().equals(Constants.DELETE);
 //		if(!num_connects.containsKey(slave)) {
 //			// TODO handle
@@ -187,7 +213,7 @@ public class MasterServer extends TCPServer {
 //				}
 //			}
 //		}
-//	}
+	}
 	
 	/**
 	 * Handle the starting up of a new slave server, redirects it to another slave to retrieve db info
