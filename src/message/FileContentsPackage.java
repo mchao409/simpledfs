@@ -12,14 +12,14 @@ public class FileContentsPackage extends MessagePackage {
 	private TCPServerInfo sender_of_package;
 //	private int id;
 	
-	public FileContentsPackage(int command, String message, FileContents file) {
+	public FileContentsPackage(String command, String message, FileContents file) {
 		super(command);
 //		this.id = id;
 		this.message = message;
 		this.file = file;
 	}
 	
-	public FileContentsPackage(int command, String message, FileContents file, TCPServerInfo sender) {
+	public FileContentsPackage(String command, String message, FileContents file, TCPServerInfo sender) {
 		this(command, message, file);
 		sender_of_package = sender;
 	}

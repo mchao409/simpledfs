@@ -1,11 +1,16 @@
 package network;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
 
+import file.ChunkReader;
 import message.QueryPackage;
 import message.FileContentsPackage;
 import message.TCPServerInfoPackage;
+import server.Constants;
 
 /**
  * API for communicating with remote file system
@@ -28,7 +33,8 @@ public class Notify {
 	 */
 	private TCPServerInfo query_for_slave() {
 		synchronized(master) {
-			master.send(new QueryPackage(4));
+			master.send(new QueryPackage(Constants.CLIENT));
+
 			TCPServerInfoPackage slave_info = (TCPServerInfoPackage) master.read();
 			if(slave_info == null) {
 				// TODO
@@ -36,6 +42,24 @@ public class Notify {
 			return slave_info.getServerInfo();
 		
 		}
+	}
+	
+	public boolean add_file(String path_to_file) {
+		BufferedInputStream f;
+		try {
+			f = new BufferedInputStream(new FileInputStream(path_to_file));
+		} catch (FileNotFoundException e) {
+			System.out.println("No file could be found at " + path_to_file);
+			return false;
+		}
+		ChunkReader reader = new ChunkReader(f);
+		TCPServerInfo slave_info;
+		while(reader.available()) {
+			slave_info  = query_for_slave();
+			
+		}
+		return true;
+
 	}
 	
 	/**
@@ -65,7 +89,7 @@ public class Notify {
 		try {
 			FileContents f = new FileContents(file_name.getBytes(), contents);
 			TCPConnection connect = new TCPConnection(new Socket(slave_address, slave_port));
-			FileContentsPackage m = new FileContentsPackage(0, null, f);
+			FileContentsPackage m = new FileContentsPackage(Constants.ADD, null, f);
 			connect.send(m);
 			FileContentsPackage resp = (FileContentsPackage) connect.read();
 			return resp.getMessage().getBytes();
@@ -89,7 +113,7 @@ public class Notify {
 	public byte[] read_file(String file_name, String slave_address, int slave_port) {
 		try {
 			TCPConnection connect = new TCPConnection(new Socket(slave_address, slave_port));
-			connect.send(new FileContentsPackage(1, file_name, null));
+			connect.send(new FileContentsPackage(Constants.READ, file_name, null));
 			FileContentsPackage resp = (FileContentsPackage) connect.read();
 			FileContents file = resp.getFileContents();
 			return file.getContents();
@@ -112,7 +136,7 @@ public class Notify {
 	 * if an error occurs
 	 */
 	public byte[] delete_file(String file_name, String slave_address, int slave_port) {
-			FileContentsPackage m = new FileContentsPackage(2,file_name, null);
+			FileContentsPackage m = new FileContentsPackage(Constants.DELETE,file_name, null);
 			FileContentsPackage resp;
 			try {
 				TCPConnection connect = new TCPConnection(new Socket(slave_address, slave_port));
@@ -136,7 +160,7 @@ public class Notify {
 	public void printAll(int slave_port) {
 		try  {
 			TCPConnection connect = new TCPConnection(new Socket("127.0.0.1", slave_port));
-			QueryPackage m = new QueryPackage(5);
+			QueryPackage m = new QueryPackage(Constants.PRINT_ALL);
 			connect.send(m);
 		} catch(IOException e ) {
 			e.printStackTrace();

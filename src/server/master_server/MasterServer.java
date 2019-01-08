@@ -38,37 +38,46 @@ public class MasterServer extends TCPServer {
 	}
 	
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
-		String command = Constants.COMMANDS[msg.getCommand()];
+		String command = msg.getCommand();
 		switch(command) {
-		case "add": // notification from slave server that a client wishes to add
+		case Constants.ADD: // notification from slave server that a client wishes to add
 			add_file(s, (FileContentsPackage)msg);
 			break;
 			
-		case "delete": // notification from slave server that a client wishes to delete
+		case Constants.DELETE: // notification from slave server that a client wishes to delete
 			delete_file(s,(FileContentsPackage)msg);
 			break;
 			
-		case "new_slave": // new minion connection
+		case Constants.NEW_SLAVE: // new minion connection
 			new_slave(s, (TCPServerInfoPackage) msg);
 			break;
 			
-		case "client": // initial client query
+		case Constants.CLIENT: // initial client query
 			client_initial_query(s, msg);
 			break;
 			
-		case "print_all":
+		case Constants.PRINT_ALL:
 			System.out.println(file_names);
 			break;
 			
-		case "handling_client": // notification that slave is handling a client
+		case Constants.HANDLING_CLIENT: // notification that slave is handling a client
 			TCPServerInfoPackage slave = (TCPServerInfoPackage) msg;
 			String message = slave.getMessage();
-			if(message.equals(Constants.HANDLING_CLIENT)) {
-				num_connects.put(slave.getServerInfo(), num_connects.get(slave.getServerInfo()) + 1);
+			if(message.equals(Constants.CURRENTLY_HANDLING_CLIENT)) {
+				synchronized(num_connects) {
+					num_connects.put(slave.getServerInfo(), num_connects.get(slave.getServerInfo()) + 1);
+				}
 			}
 			else if (message.equals(Constants.DONE_HANDLING_CLIENT)){
-				num_connects.put(slave.getServerInfo(), num_connects.get(slave.getServerInfo())-1);
+				synchronized(num_connects) {
+					num_connects.put(slave.getServerInfo(), num_connects.get(slave.getServerInfo())-1);
+
+				}
 			}
+			break;
+		
+		case Constants.ADD_CHUNK:
+			
 			break;
 		default: 
 			break;
@@ -83,19 +92,22 @@ public class MasterServer extends TCPServer {
 	private void notifyAllExceptSender(FileContentsPackage ignore_sender) {
 		// Needs to be tested
 		TCPServerInfo sender = ignore_sender.getSenderOfPackage();
-		for(TCPServerInfo slave : num_connects.keySet()) {
-			Thread t = new Thread(() -> {
-				if(!sender.equals(slave)) {
-					try  {
-						TCPConnection to_send = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
-						to_send.send(ignore_sender);
-					} catch(IOException e) {
-						e.printStackTrace();
+		synchronized(num_connects) {
+			for(TCPServerInfo slave : num_connects.keySet()) {
+				Thread t = new Thread(() -> {
+					if(!sender.equals(slave)) {
+						try  {
+							TCPConnection to_send = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
+							to_send.send(ignore_sender);
+						} catch(IOException e) {
+							e.printStackTrace();
+						}
 					}
-				}
-			});
-			t.start();
+				});
+				t.start();
+			}
 		}
+
 	}
 
 	/**
@@ -105,7 +117,7 @@ public class MasterServer extends TCPServer {
 	 * @throws IOException
 	 */
 	private void add_file(TCPConnection slave, FileContentsPackage msg) throws IOException {
-		assert msg.getCommand() == 0;
+		assert msg.getCommand().equals(Constants.ADD);
 		if(!num_connects.containsKey(slave)) {
 			// TODO handle
 		}
@@ -113,12 +125,12 @@ public class MasterServer extends TCPServer {
 		String file_name = new String(file.getName());
 		synchronized(file_names) { 
 			if(file_names.contains(file_name)) {
-				slave.send(new FileContentsPackage(0,Constants.FILE_ALREADY_EXISTS, null));
+				slave.send(new FileContentsPackage(Constants.ADD,Constants.FILE_ALREADY_EXISTS, null));
 			}
 			else {
 				file_names.add(file_name);
-				notifyAllExceptSender(new FileContentsPackage(6,null, file, msg.getSenderOfPackage()));
-				slave.send(new FileContentsPackage(0, Constants.ADD_SUCCESS, msg.getFileContents()));
+				notifyAllExceptSender(new FileContentsPackage(Constants.ADD_MASTER,null, file, msg.getSenderOfPackage()));
+				slave.send(new FileContentsPackage(Constants.ADD, Constants.ADD_SUCCESS, msg.getFileContents()));
 			}
 		}
 	}
@@ -130,7 +142,7 @@ public class MasterServer extends TCPServer {
 	 * @throws IOException
 	 */
 	private void delete_file(TCPConnection slave, FileContentsPackage msg) throws IOException {
-		assert msg.getCommand() == 2;
+		assert msg.getCommand().equals(Constants.DELETE);
 		if(!num_connects.containsKey(slave)) {
 			// TODO handle
 		}
@@ -139,13 +151,13 @@ public class MasterServer extends TCPServer {
 			if(file_names.contains(file_name)) {
 				file_names.remove(file_name);
 				synchronized(slave) {
-					slave.send(new FileContentsPackage(2, Constants.DELETE_SUCCESS, new FileContents(file_name.getBytes(), null)));
+					slave.send(new FileContentsPackage(Constants.DELETE, Constants.DELETE_SUCCESS, new FileContents(file_name.getBytes(), null)));
 				}
-				notifyAllExceptSender(new FileContentsPackage(7,null, new FileContents(file_name.getBytes(), null), msg.getSenderOfPackage()));
+				notifyAllExceptSender(new FileContentsPackage(Constants.DELETE_MASTER,null, new FileContents(file_name.getBytes(), null), msg.getSenderOfPackage()));
 			}
 			else {
 				synchronized(slave) {
-					slave.send(new FileContentsPackage(2, Constants.FILE_DOES_NOT_EXIST, null));
+					slave.send(new FileContentsPackage(Constants.DELETE, Constants.FILE_DOES_NOT_EXIST, null));
 				}
 			}
 		}
@@ -155,11 +167,11 @@ public class MasterServer extends TCPServer {
 	 * Handle the starting up of a new slave server, redirects it to another slave to retrieve db info
 	 */
 	private void new_slave(TCPConnection slave, TCPServerInfoPackage msg) {
-		assert msg.getCommand() == 3;
+		assert msg.getCommand().equals(Constants.NEW_SLAVE);
 		synchronized(num_connects) {
 			num_connects.put(msg.getServerInfo(), 0);
 		}
-		slave.send(new TCPServerInfoPackage(-1, get_least_occupied_slave(msg.getServerInfo())));
+		slave.send(new TCPServerInfoPackage(null, get_least_occupied_slave(msg.getServerInfo())));
 		
 	}
 	
@@ -182,7 +194,7 @@ public class MasterServer extends TCPServer {
 	 * Handle a client's initial query, send information about slave server to contact
 	 */
 	private void client_initial_query(TCPConnection client, MessagePackage msg) {
-		TCPServerInfoPackage resp = new TCPServerInfoPackage(-1, get_least_occupied_slave(null));
+		TCPServerInfoPackage resp = new TCPServerInfoPackage(null, get_least_occupied_slave(null));
 		client.send(resp);
 	}
 

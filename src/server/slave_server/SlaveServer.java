@@ -56,7 +56,6 @@ public class SlaveServer extends TCPServer {
 			}
 		}); 
 		t.start();
-		
 		get_server_data();
 
 	}
@@ -66,7 +65,7 @@ public class SlaveServer extends TCPServer {
 	 */
 	private void get_server_data(){
 		// Send master an initial query to get all the server data
-		master.send(new TCPServerInfoPackage(3, new TCPServerInfo("127.0.0.1", port))); // TODO fix ip
+		master.send(new TCPServerInfoPackage(Constants.NEW_SLAVE, new TCPServerInfo("127.0.0.1", port))); // TODO fix ip
 		TCPServerInfoPackage slave_to_get_from = (TCPServerInfoPackage) master.read();
 		TCPServerInfo slave = slave_to_get_from.getServerInfo();
 		if(slave == null) {
@@ -74,7 +73,7 @@ public class SlaveServer extends TCPServer {
 		}
 		try {
 			TCPConnection slave_connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
-			slave_connect.send(new TCPServerInfoPackage(9, slave_info));
+			slave_connect.send(new TCPServerInfoPackage(Constants.GET_ALL_FILES, slave_info));
 			MultipleFilesPackage pkg = (MultipleFilesPackage) slave_connect.read();
 			for(FileContents f : pkg) {
 				add_file_to_db(f); 
@@ -87,35 +86,35 @@ public class SlaveServer extends TCPServer {
 	}
 	
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
-		String command = Constants.COMMANDS[msg.getCommand()];
+		String command = msg.getCommand();
 		switch(command) {
-		case "add": // notification from client to add a file
+		case Constants.ADD: // notification from client to add a file
 			add_file(s, (FileContentsPackage)msg);
 			break;
 			
-		case "read": // notification from client to read a file
+		case Constants.READ: // notification from client to read a file
 			read_file(s, (FileContentsPackage) msg);
 			break;
 			
-		case "delete": // notification from client to delete a file
+		case Constants.DELETE: // notification from client to delete a file
 			delete_file(s, (FileContentsPackage)msg);
 			break;
 		
-		case "print_all":  // used for debugging
+		case Constants.PRINT_ALL:  // used for debugging
 			System.out.println(file_paths);
 			break;
 		
-		case "add_master": // notification from master a file has been added to the system
+		case Constants.ADD_MASTER: // notification from master a file has been added to the system
 			FileContents file_to_add = ((FileContentsPackage)msg).getFileContents();
 			add_file_to_db(file_to_add);
 			break;
 			
-		case "delete_master": // notification from master a file has been deleted from the system
+		case Constants.DELETE_MASTER: // notification from master a file has been deleted from the system
 			FileContents file_to_delete = ((FileContentsPackage)msg).getFileContents();
 			delete_file_from_db(file_to_delete);
 			break;
 		
-		case "get_all_files": // send data about all files over
+		case Constants.GET_ALL_FILES: // send data about all files over
 			get_all_files(s);
 			break;
 			
@@ -130,10 +129,10 @@ public class SlaveServer extends TCPServer {
 	 */
 	private void notify_master_client(boolean starting) {
 		if(starting) {
-			master.send(new TCPServerInfoPackage(8, Constants.HANDLING_CLIENT, slave_info));
+			master.send(new TCPServerInfoPackage(Constants.HANDLING_CLIENT, Constants.CURRENTLY_HANDLING_CLIENT, slave_info));
 		}
 		else {
-			master.send(new TCPServerInfoPackage(8, Constants.DONE_HANDLING_CLIENT, slave_info));
+			master.send(new TCPServerInfoPackage(Constants.HANDLING_CLIENT, Constants.DONE_HANDLING_CLIENT, slave_info));
 		}
 	}
 
@@ -153,10 +152,10 @@ public class SlaveServer extends TCPServer {
 		if(resp.getMessage().equals(Constants.ADD_SUCCESS)) {
 			add_file_to_db(file);
 			String file_name = new String(file.getName());
-			s.send(new FileContentsPackage(0, "File successfully added", null));
+			s.send(new FileContentsPackage(Constants.ADD, "File successfully added", null));
 		}
 		else {
-			s.send(new FileContentsPackage(0, "File could not be added", null));
+			s.send(new FileContentsPackage(Constants.ADD, "File could not be added", null));
 		}
 		notify_master_client(false);
 	}
@@ -187,7 +186,7 @@ public class SlaveServer extends TCPServer {
 			// TODO deal with this
 		} 
 		FileContents file = new FileContents(file_name.getBytes(), contents);
-		s.send(new FileContentsPackage(1, null, file));
+		s.send(new FileContentsPackage(Constants.READ, null, file));
 		notify_master_client(false);
 	}
 
@@ -206,13 +205,13 @@ public class SlaveServer extends TCPServer {
 		}
 		String message = resp.getMessage();
 		if(message.equals(Constants.FILE_DOES_NOT_EXIST)) {
-			s.send(new FileContentsPackage(2, "The file you chose does not exist", null));
+			s.send(new FileContentsPackage(Constants.DELETE, "The file you chose does not exist", null));
 		}
 		else if (message.equals(Constants.DELETE_SUCCESS)) {
 			FileContents file = resp.getFileContents();
 			String file_name = new String(file.getName());
 			byte[] contents = delete_file_from_db(file);
-			s.send(new FileContentsPackage(2, null, new FileContents(file_name.getBytes(), contents)));
+			s.send(new FileContentsPackage(Constants.DELETE, null, new FileContents(file_name.getBytes(), contents)));
 		}
 		else s.send(null); // TODO handle
 		notify_master_client(false);

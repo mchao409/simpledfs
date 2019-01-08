@@ -12,7 +12,7 @@ public class MultipleFilesPackage extends MessagePackage implements Serializable
 	List<FileContents> files;
  
 	public MultipleFilesPackage() {
-		super(-1);
+		super(null);
 		files = new ArrayList<FileContents>();
 	}
 	

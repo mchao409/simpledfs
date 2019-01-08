@@ -28,11 +28,12 @@ class TestDisconnect {
 		Socket s = new Socket("127.0.0.1", 8999);
 		Thread.sleep(1000);
 		s.close();
-
 		Thread.sleep(1000);
 		s = new Socket("127.0.0.1", 8999);
 		Notify n = new Notify("127.0.0.1", 9000);
+
 		n.add_file("testing", "stuff".getBytes());
+
 		s.close();
 	}
 	

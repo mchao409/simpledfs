@@ -128,7 +128,6 @@ class TestMultipleSlaves {
 		}
 		assertFalse(Arrays.equals("test1_contents".getBytes(), n.read_file("test1")));
 		assertTrue(Arrays.equals("test2_contents".getBytes(), n.read_file("test2")));
-
 	}
 
 }

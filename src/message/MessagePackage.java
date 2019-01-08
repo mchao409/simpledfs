@@ -3,13 +3,13 @@ package message;
 import java.io.Serializable;
 
 public abstract class MessagePackage implements Serializable {
-	private int command;
+	private String command;
 	
-	public MessagePackage(int command) {
+	public MessagePackage(String command) {
 		this.command = command;
 	}
 	
-	public int getCommand() {
+	public String getCommand() {
 		return command;
 	}
 }
