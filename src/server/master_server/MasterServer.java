@@ -2,6 +2,8 @@ package server.master_server;
 import java.io.*;
 import java.util.*;
 
+import message.FileChunkInfoPackage;
+import message.FileChunkPackage;
 import message.FileContentsPackage;
 import message.MessagePackage;
 import message.QueryPackage;
@@ -11,6 +13,7 @@ import network.TCPConnection;
 import network.TCPServerInfo;
 import server.Constants;
 import server.TCPServer;
+import server.master_server.log.FileLog;
 
 import java.net.*;
 import java.nio.file.Files;
@@ -30,22 +33,35 @@ public class MasterServer extends TCPServer {
 	 */
 	private HashMap<TCPServerInfo, Integer> num_connects;
 	
+	/**
+	 * Number of slave servers that should hold each chunk
+	 */
+	private static int CHUNK_DISTR_CONST = 3;
+	
 
+	private HashMap<String, FileLog> file_storage_data;
+	
+	
 	public MasterServer(int port) throws IOException {
 		super(port);
 		file_names = new HashSet<String>();
 		num_connects = new HashMap<TCPServerInfo, Integer>();
+		file_storage_data = new HashMap<String,FileLog>();
 	}
 	
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
 		String command = msg.getCommand();
 		switch(command) {
 		case Constants.ADD: // notification from slave server that a client wishes to add
-			add_file(s, (FileContentsPackage)msg);
+//			add_file(s, (FileContentsPackage)msg);
+			break;
+		
+		case Constants.CHUNK_ADDED:
+			log_added_chunk((FileChunkInfoPackage) msg); // slave server notifies that it has added a chunk
 			break;
 			
 		case Constants.DELETE: // notification from slave server that a client wishes to delete
-			delete_file(s,(FileContentsPackage)msg);
+//			delete_file(s,(FileContentsPackage)msg);
 			break;
 			
 		case Constants.NEW_SLAVE: // new minion connection
@@ -71,97 +87,107 @@ public class MasterServer extends TCPServer {
 			else if (message.equals(Constants.DONE_HANDLING_CLIENT)){
 				synchronized(num_connects) {
 					num_connects.put(slave.getServerInfo(), num_connects.get(slave.getServerInfo())-1);
-
 				}
 			}
-			break;
-		
-		case Constants.ADD_CHUNK:
-			
 			break;
 		default: 
 			break;
 		}
 	}
 	
-	/**
-	 * Send a message to all slave servers except for the one indicated in the argument
-	 * @param ignore_sender a package containing information about the sender to ignore
-	 * @param msg
-	 */
-	private void notifyAllExceptSender(FileContentsPackage ignore_sender) {
-		// Needs to be tested
-		TCPServerInfo sender = ignore_sender.getSenderOfPackage();
-		synchronized(num_connects) {
-			for(TCPServerInfo slave : num_connects.keySet()) {
-				Thread t = new Thread(() -> {
-					if(!sender.equals(slave)) {
-						try  {
-							TCPConnection to_send = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
-							to_send.send(ignore_sender);
-						} catch(IOException e) {
-							e.printStackTrace();
-						}
-					}
-				});
-				t.start();
+	private void log_added_chunk(FileChunkInfoPackage pkg) {
+		System.out.println(pkg);
+		String identifier = pkg.get_identifier();
+		synchronized(file_storage_data) {
+			if(file_storage_data.get(identifier) == null) {
+				FileLog f = new FileLog(identifier);
+				file_storage_data.put(identifier, f);
 			}
-		}
-
-	}
-
-	/**
-	 * Handle an add request to the file system
-	 * @param slave the slave server that received the request from the client
-	 * @param msg
-	 * @throws IOException
-	 */
-	private void add_file(TCPConnection slave, FileContentsPackage msg) throws IOException {
-		assert msg.getCommand().equals(Constants.ADD);
-		if(!num_connects.containsKey(slave)) {
-			// TODO handle
-		}
-		FileContents file = msg.getFileContents();
-		String file_name = new String(file.getName());
-		synchronized(file_names) { 
-			if(file_names.contains(file_name)) {
-				slave.send(new FileContentsPackage(Constants.ADD,Constants.FILE_ALREADY_EXISTS, null));
-			}
-			else {
-				file_names.add(file_name);
-				notifyAllExceptSender(new FileContentsPackage(Constants.ADD_MASTER,null, file, msg.getSenderOfPackage()));
-				slave.send(new FileContentsPackage(Constants.ADD, Constants.ADD_SUCCESS, msg.getFileContents()));
-			}
+			file_storage_data.get(identifier).add_chunk_location(pkg.get_start(), pkg.get_slave());
+			
 		}
 	}
+	
+//	/**
+//	 * Send a message to all slave servers except for the one indicated in the argument
+//	 * @param ignore_sender a package containing information about the sender to ignore
+//	 * @param msg
+//	 */
+//	private void notifyAllExceptSender(FileContentsPackage ignore_sender) {
+//		// Needs to be tested
+//		TCPServerInfo sender = ignore_sender.getSenderOfPackage();
+//		synchronized(num_connects) {
+//			for(TCPServerInfo slave : num_connects.keySet()) {
+//				Thread t = new Thread(() -> {
+//					if(!sender.equals(slave)) {
+//						try  {
+//							TCPConnection to_send = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
+//							to_send.send(ignore_sender);
+//						} catch(IOException e) {
+//							e.printStackTrace();
+//						}
+//					}
+//				});
+//				t.start();
+//			}
+//		}
+//
+//	}
 
-	/**
-	 * Handle a delete request to the file system
-	 * @param slave the slave server that received the request from the client
-	 * @param msg
-	 * @throws IOException
-	 */
-	private void delete_file(TCPConnection slave, FileContentsPackage msg) throws IOException {
-		assert msg.getCommand().equals(Constants.DELETE);
-		if(!num_connects.containsKey(slave)) {
-			// TODO handle
-		}
-		String file_name = msg.getMessage();
-		synchronized(file_names) {
-			if(file_names.contains(file_name)) {
-				file_names.remove(file_name);
-				synchronized(slave) {
-					slave.send(new FileContentsPackage(Constants.DELETE, Constants.DELETE_SUCCESS, new FileContents(file_name.getBytes(), null)));
-				}
-				notifyAllExceptSender(new FileContentsPackage(Constants.DELETE_MASTER,null, new FileContents(file_name.getBytes(), null), msg.getSenderOfPackage()));
-			}
-			else {
-				synchronized(slave) {
-					slave.send(new FileContentsPackage(Constants.DELETE, Constants.FILE_DOES_NOT_EXIST, null));
-				}
-			}
-		}
-	}
+//	/**
+//	 * Handle an add request to the file system
+//	 * @param slave the slave server that received the request from the client
+//	 * @param msg
+//	 * @throws IOException
+//	 */
+//	private void add_file(TCPConnection slave, FileContentsPackage msg) throws IOException {
+//		assert msg.getCommand().equals(Constants.ADD);
+//		if(!num_connects.containsKey(slave)) {
+//			// TODO handle
+//		}
+//		FileContents file = msg.getFileContents();
+//		String file_name = new String(file.getName());
+//		synchronized(file_names) { 
+//			if(file_names.contains(file_name)) {
+//				slave.send(new FileContentsPackage(Constants.ADD,Constants.FILE_ALREADY_EXISTS, null));
+//			}
+//			else {
+//				file_names.add(file_name);
+//				notifyAllExceptSender(new FileContentsPackage(Constants.ADD_MASTER,null, file, msg.getSenderOfPackage()));
+//				slave.send(new FileContentsPackage(Constants.ADD, Constants.ADD_SUCCESS, msg.getFileContents()));
+//			}
+//		}
+//	}
+	
+
+
+//	/**
+//	 * Handle a delete request to the file system
+//	 * @param slave the slave server that received the request from the client
+//	 * @param msg
+//	 * @throws IOException
+//	 */
+//	private void delete_file(TCPConnection slave, FileContentsPackage msg) throws IOException {
+//		assert msg.getCommand().equals(Constants.DELETE);
+//		if(!num_connects.containsKey(slave)) {
+//			// TODO handle
+//		}
+//		String file_name = msg.getMessage();
+//		synchronized(file_names) {
+//			if(file_names.contains(file_name)) {
+//				file_names.remove(file_name);
+//				synchronized(slave) {
+//					slave.send(new FileContentsPackage(Constants.DELETE, Constants.DELETE_SUCCESS, new FileContents(file_name.getBytes(), null)));
+//				}
+//				notifyAllExceptSender(new FileContentsPackage(Constants.DELETE_MASTER,null, new FileContents(file_name.getBytes(), null), msg.getSenderOfPackage()));
+//			}
+//			else {
+//				synchronized(slave) {
+//					slave.send(new FileContentsPackage(Constants.DELETE, Constants.FILE_DOES_NOT_EXIST, null));
+//				}
+//			}
+//		}
+//	}
 	
 	/**
 	 * Handle the starting up of a new slave server, redirects it to another slave to retrieve db info
@@ -190,12 +216,32 @@ public class MasterServer extends TCPServer {
 		return min_connects;
 	}
 	
+	private List<TCPServerInfo> get_least_occupied_slaves() {
+		ArrayList<TCPServerInfo> slaves = new ArrayList<TCPServerInfo>();
+
+		synchronized(num_connects) {
+			for(int i = 0; i < CHUNK_DISTR_CONST; i++) {
+				TCPServerInfo min_connects = null;
+				int min = Integer.MAX_VALUE;
+				for(TCPServerInfo slave : num_connects.keySet()) {
+					int curr_connects = num_connects.get(slave);
+					if(curr_connects < min && !slaves.contains(slave)) {
+						min = num_connects.get(slave);
+						min_connects = slave;
+					}
+				}
+				slaves.add(min_connects);
+			}
+		}
+		return slaves;
+	}
+	
 	/**
 	 * Handle a client's initial query, send information about slave server to contact
 	 */
 	private void client_initial_query(TCPConnection client, MessagePackage msg) {
-		TCPServerInfoPackage resp = new TCPServerInfoPackage(null, get_least_occupied_slave(null));
-		client.send(resp);
+		List<TCPServerInfo> least_occ_slaves = get_least_occupied_slaves();
+		client.send(new TCPServerInfoPackage(null, least_occ_slaves));
 	}
 
 }

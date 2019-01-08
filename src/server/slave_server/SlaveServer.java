@@ -8,6 +8,9 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.HashSet;
 
+import file.FileChunk;
+import message.FileChunkInfoPackage;
+import message.FileChunkPackage;
 import message.FileContentsPackage;
 import message.MessagePackage;
 import message.MultipleFilesPackage;
@@ -63,7 +66,7 @@ public class SlaveServer extends TCPServer {
 	/**
 	 * Retrieves all of the files from another slave server
 	 */
-	private void get_server_data(){
+	private void get_server_data() {
 		// Send master an initial query to get all the server data
 		master.send(new TCPServerInfoPackage(Constants.NEW_SLAVE, new TCPServerInfo("127.0.0.1", port))); // TODO fix ip
 		TCPServerInfoPackage slave_to_get_from = (TCPServerInfoPackage) master.read();
@@ -81,15 +84,13 @@ public class SlaveServer extends TCPServer {
 		} catch(IOException e) {
 			System.out.println("Could not retrieve server data");
 		}
-
-		
 	}
 	
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
 		String command = msg.getCommand();
 		switch(command) {
 		case Constants.ADD: // notification from client to add a file
-			add_file(s, (FileContentsPackage)msg);
+			add_file(s, (FileChunkPackage)msg);
 			break;
 			
 		case Constants.READ: // notification from client to read a file
@@ -139,26 +140,53 @@ public class SlaveServer extends TCPServer {
 	/**
 	 * Adds a new file to the server
 	 */
-	private void add_file(TCPConnection s, FileContentsPackage msg) throws IOException {
-		notify_master_client(true);
-		FileContentsPackage resp;
-		synchronized(master) {
-			msg.addSender(new TCPServerInfo("127.0.0.1", port));
-			master.send(msg);
-			resp = (FileContentsPackage) master.read();
+	private void add_file(TCPConnection s, FileChunkPackage msg) throws IOException {
+//		notify_master_client(true);
+		if(add_chunk_to_db(msg)) {
+			master.send(new FileChunkInfoPackage(Constants.CHUNK_ADDED, msg.get_identifier(),
+					msg.get_chunk().get_start(),msg.get_chunk().get_end(), slave_info));
+			// todo notify master chunk was added
 		}
 
-		FileContents file = resp.getFileContents();
-		if(resp.getMessage().equals(Constants.ADD_SUCCESS)) {
-			add_file_to_db(file);
-			String file_name = new String(file.getName());
-			s.send(new FileContentsPackage(Constants.ADD, "File successfully added", null));
-		}
-		else {
-			s.send(new FileContentsPackage(Constants.ADD, "File could not be added", null));
-		}
-		notify_master_client(false);
+//		notify_master_client(false);
+		
+//		notify_master_client(true);
+//		FileContentsPackage resp;
+//		synchronized(master) {
+//			msg.addSender(new TCPServerInfo("127.0.0.1", port));
+//			master.send(msg);
+//			resp = (FileContentsPackage) master.read();
+//		}
+//
+//		FileContents file = resp.getFileContents();
+//		if(resp.getMessage().equals(Constants.ADD_SUCCESS)) {
+//			add_file_to_db(file);
+//			String file_name = new String(file.getName());
+//			s.send(new FileContentsPackage(Constants.ADD, "File successfully added", null));
+//		}
+//		else {
+//			s.send(new FileContentsPackage(Constants.ADD, "File could not be added", null));
+//		}
+//		notify_master_client(false);
 	}
+	
+	private boolean add_chunk_to_db(FileChunkPackage pkg) {
+		FileChunk chunk = pkg.get_chunk();
+		String save_name = pkg.get_identifier() + chunk.get_start();
+		try {
+			Files.write(Paths.get(DB_PATH + save_name), chunk.get_byte_arr());
+		} catch(IOException e) {
+			return false;
+		}
+		return true;
+	}
+	
+//	private void read_chunk_from_db(TCPConnection s, FileChunkInfoPackage pkg) {
+//		notify_master_client(true);
+//		String save_name = pkg.get_identifier() + pkg.get_start() + "_" + pkg.get_end();
+//		String path = DB_PATH + save_name;
+//		
+//	}
 
 	/**
 	 * Save file to database

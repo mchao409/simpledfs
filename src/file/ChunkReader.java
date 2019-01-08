@@ -3,13 +3,14 @@ package file;
 import java.io.IOException;
 import java.io.InputStream;
 
+import server.Constants;
+
 /**
  * Reads in chunks of data from an InputStream
  *
  */
 public class ChunkReader {
 
-	private static final int CHUNK_SIZE = 200;
 	private InputStream inFile;
 	private int current_pos;
 	
@@ -35,10 +36,10 @@ public class ChunkReader {
 	 * @return the chunk of data, represented by a FileChunk
 	 */
 	public FileChunk read_chunk()  {
-		byte[] data = new byte[CHUNK_SIZE];
+		byte[] data = new byte[Constants.CHUNK_SIZE];
 		int num_bytes_read = 0;
 		try {
-			num_bytes_read = inFile.read(data, 0, CHUNK_SIZE);
+			num_bytes_read = inFile.read(data, 0, Constants.CHUNK_SIZE);
 		} catch(IOException e) {
 			e.printStackTrace();
 			return null;

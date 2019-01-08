@@ -14,8 +14,7 @@ public class Constants {
 	public static final String DELETE_MASTER = "DELETE_MASTER";
 	public static final String HANDLING_CLIENT = "HANDLING_CLIENT";
 	public static final String GET_ALL_FILES = "GET_ALL_FILES";
-	public static final String ADD_CHUNK = "ADD_CHUNK";
-	
+	public static final String CHUNK_ADDED = "CHUNK_ADDED";
 	
 	
 	public static final String ADD_SUCCESS = "ADDSUCCESS"; 
@@ -26,5 +25,7 @@ public class Constants {
 	
 	public static final String CURRENTLY_HANDLING_CLIENT = "CURRENTLYHANDLINGCLIENT";
 	public static final String DONE_HANDLING_CLIENT = "DONEHANDLINGCLIENT";
+	
+	public static final int CHUNK_SIZE = 200;
 		
 }

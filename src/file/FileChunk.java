@@ -1,25 +1,21 @@
 package file;
 
+import java.io.Serializable;
+
 /**
  * Represents a chunk of data from a given file
  */
-public class FileChunk implements Comparable<FileChunk> {
-	/**
-	 * The starting byte position of the chunk in the original file
-	 */
-	private int start;
-	/**
-	 * The ending byte position of the chunk in the original file
-	 */
-	private int end;
+public class FileChunk implements Comparable<FileChunk>, Serializable {
+
 	/**
 	 * A byte-array representing the chunk of data
 	 */
 	private byte[] chunk;
 	
+	private ChunkInterval interval;
+		
 	public FileChunk(int start, int end, byte[] chunk) {
-		this.start = start;
-		this.end = end;
+		this.interval = new ChunkInterval(start, end);
 		this.chunk = chunk;
 	}
 	
@@ -30,6 +26,14 @@ public class FileChunk implements Comparable<FileChunk> {
 	public byte[] get_byte_arr() {
 		return chunk;
 	}
+	
+	public int get_start() {
+		return interval.get_start();
+	}
+	
+	public int get_end() {
+		return interval.get_end();
+	}
 
 	/**
 	 * Returns a negative value if the chunk position of this is before the chunk position of other
@@ -38,8 +42,8 @@ public class FileChunk implements Comparable<FileChunk> {
 	 */
 	@Override
 	public int compareTo(FileChunk other) {
-		if(start < other.start) return -1;
-		if(start > other.start) return 1;
+		if(interval.get_start() < other.interval.get_start()) return -1;
+		if(interval.get_start() > other.interval.get_start()) return 1;
 		return 0;
 	}
 	

@@ -5,9 +5,13 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.List;
 
 import file.ChunkReader;
+import file.FileChunk;
 import message.QueryPackage;
+import message.FileChunkPackage;
 import message.FileContentsPackage;
 import message.TCPServerInfoPackage;
 import server.Constants;
@@ -44,7 +48,24 @@ public class Notify {
 		}
 	}
 	
-	public boolean add_file(String path_to_file) {
+	private List<TCPServerInfo> query_for_slaves() {
+		synchronized(master) {
+			master.send(new QueryPackage(Constants.CLIENT));
+
+			TCPServerInfoPackage slave_info = (TCPServerInfoPackage) master.read();
+			if(slave_info == null) {
+				// TODO
+			}
+			return slave_info.getServers();
+		
+		}
+	}
+	
+	private boolean check_if_file_exists() {
+		return false;
+	}
+	
+	public boolean add_file(String identifier, String path_to_file) {
 		BufferedInputStream f;
 		try {
 			f = new BufferedInputStream(new FileInputStream(path_to_file));
@@ -53,10 +74,17 @@ public class Notify {
 			return false;
 		}
 		ChunkReader reader = new ChunkReader(f);
-		TCPServerInfo slave_info;
 		while(reader.available()) {
-			slave_info  = query_for_slave();
-			
+			FileChunk chunk = reader.read_chunk();
+			List<TCPServerInfo> slaves = query_for_slaves();
+			for(TCPServerInfo slave_info : slaves) {
+				try {
+					TCPConnection connect = new TCPConnection(new Socket(slave_info.getAddress(), slave_info.getPort()));
+					connect.send(new FileChunkPackage(Constants.ADD, identifier, chunk));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 		return true;
 
