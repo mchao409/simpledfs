@@ -1,6 +1,7 @@
 package file;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -28,6 +29,7 @@ public class SystemFile {
 	 * Get a byte-array representing the SystemFile
 	 */
 	public byte[] get_byte_arr() {
+		Collections.sort(chunks);
 		byte[] file = new byte[total_len];
 		int curr_ind = 0;
 		for(FileChunk c: chunks ) {

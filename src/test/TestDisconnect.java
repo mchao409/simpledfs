@@ -32,32 +32,8 @@ class TestDisconnect {
 		s = new Socket("127.0.0.1", 8999);
 		Notify n = new Notify("127.0.0.1", 9000);
 
-		n.add_file("testing", "stuff".getBytes());
+		n.add_file("test", "src/test/resources/chunkReaderTest.txt");
 
 		s.close();
 	}
-	
-	@Test
-	void testDisconnect2() throws InterruptedException {
-		RunServers s = new RunServers();
-		int master_port = 3000;
-		int slave_starting_port = 2000;
-		int num_slaves = 3;
-		s.start_master_server("127.0.0.1", master_port);
-		s.start_slave_servers(slave_starting_port, num_slaves);
-		Notify n = new Notify("127.0.0.1", master_port);
-		n.add_file("test1", "test1_contents".getBytes());
-		String contents = "testing_contents";
-		Thread t1 = new Thread(() -> {
-			n.add_file("testing", contents.getBytes(), "127.0.0.1", slave_starting_port);
-		});
-		t1.start();
-		Thread.sleep(100);
-		s.closeSlave(slave_starting_port);
-		for(int i = 1; i < num_slaves; i++) {
-			assertTrue(Arrays.equals(contents.getBytes(), n.read_file("testing", "127.0.0.1", slave_starting_port + i)));
-			assertTrue(Arrays.equals("test1_contents".getBytes(), n.read_file("test1","127.0.0.1", slave_starting_port+i)));
-		}
-	}
-	
 }

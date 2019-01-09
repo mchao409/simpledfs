@@ -1,6 +1,4 @@
-package network;
-
-import message.MessagePackage;
+package message;
 
 public class FileNamePackage extends MessagePackage {
 	

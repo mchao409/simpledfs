@@ -43,7 +43,7 @@ class TestSlaveServer {
 			assertTrue(Arrays.equals(resp, file_contents));
 
 			// Ensure no exceptions
-			resp = n.delete_file("should_not_exist");	
+//			resp = n.delete_file("should_not_exist");	
 			resp = n.read_file("should_not_exist");
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -59,7 +59,7 @@ class TestSlaveServer {
 		});
 		read.start();
 		Notify n = new Notify("127.0.0.1", master_port);
-		byte[] resp = n.delete_file("testing");
+//		byte[] resp = n.delete_file("testing");
 
 	}
 }

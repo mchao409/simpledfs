@@ -31,38 +31,25 @@ class TestNotify {
 		try {
 			Thread.sleep(1000); // give time for server to start
 			
-			File f = new File("src/test/resources/file2");
+			File f = new File("src/test/resources/chunkReaderTest.txt");
 			byte[] file_contents = Files.readAllBytes(f.toPath());
 			Notify n = new Notify("127.0.0.1", master_port);
-			n.add_file("testing", file_contents);
+			n.add_file("testing", "src/test/resources/chunkReaderTest.txt");
+			Thread.sleep(500);
 			byte[] resp = n.read_file("testing");
 			assertTrue(Arrays.equals(resp,  file_contents));
 			
-			resp = n.delete_file("testing");
-			assertTrue(Arrays.equals(resp,  file_contents));
+			n.delete_file("testing");
+//			assertTrue(Arrays.equals(resp,  file_contents));
 			resp = n.read_file("testing"); 
 			assertFalse(Arrays.equals(resp, file_contents));
 			
-			resp = n.delete_file("testing");
-			assertFalse(Arrays.equals(resp, file_contents));
+			n.delete_file("testing");
 
 			// Ensure exceptions are handled properly
-			resp = n.delete_file("should_not_exist");			
+			n.delete_file("should_not_exist");			
 			resp = n.read_file("should_not_exist");
 			
-			// Repeat with other three methods
-			n.add_file("testing", file_contents);
-			resp = n.read_file("testing");
-			assertTrue(Arrays.equals(resp,  file_contents));
-			
-			resp = n.delete_file("testing");
-			assertTrue(Arrays.equals(resp,  file_contents));
-			resp = n.read_file("testing");
-			assertFalse(Arrays.equals(resp, file_contents));
-			
-			resp = n.delete_file("testing");
-			assertFalse(Arrays.equals(resp, file_contents));
-
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail();

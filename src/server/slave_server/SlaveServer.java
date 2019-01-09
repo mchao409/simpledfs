@@ -94,7 +94,7 @@ public class SlaveServer extends TCPServer {
 			break;
 			
 		case Constants.READ: // notification from client to read a file
-			read_file(s, (FileContentsPackage) msg);
+			read_file(s, (FileChunkInfoPackage) msg);
 			break;
 			
 		case Constants.DELETE: // notification from master to delete a file
@@ -202,19 +202,26 @@ public class SlaveServer extends TCPServer {
 	/**
 	 * Sends the the contents of a file
 	 */
-	private void read_file(TCPConnection s, FileContentsPackage msg) throws IOException {
+	private void read_file(TCPConnection s, FileChunkInfoPackage msg) throws IOException {
 		notify_master_client(true);
-		String file_name = msg.getMessage();
-		String path = DB_PATH + file_name;
+		String identifier = msg.get_identifier();
+		int start = msg.get_start();
+		String path = DB_PATH + identifier + start;
 		File f = new File(path);
 		byte[] contents = null;
 		try {
 			contents = Files.readAllBytes(f.toPath());
+			
 		} catch (NoSuchFileException e) {
-			// TODO deal with this
+
 		} 
-		FileContents file = new FileContents(file_name.getBytes(), contents);
-		s.send(new FileContentsPackage(Constants.READ, null, file));
+		if(contents == null) {
+			s.send(null);
+		}
+		else {
+			FileChunk chunk = new FileChunk(start, contents);
+			s.send(new FileChunkPackage(Constants.READ, identifier, chunk));
+		}
 		notify_master_client(false);
 	}
 

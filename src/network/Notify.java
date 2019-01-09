@@ -5,14 +5,18 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.List;
 
 import file.ChunkReader;
 import file.FileChunk;
+import file.SystemFile;
 import message.QueryPackage;
+import message.ChunkLocationPackage;
+import message.FileChunkInfoPackage;
 import message.FileChunkPackage;
 import message.FileContentsPackage;
+import message.FileNamePackage;
 import message.TCPServerInfoPackage;
 import server.Constants;
 
@@ -78,6 +82,7 @@ public class Notify {
 			FileChunk chunk = reader.read_chunk();
 			List<TCPServerInfo> slaves = query_for_slaves();
 			for(TCPServerInfo slave_info : slaves) {
+				if(slave_info == null) continue;
 				try {
 					TCPConnection connect = new TCPConnection(new Socket(slave_info.getAddress(), slave_info.getPort()));
 					connect.send(new FileChunkPackage(Constants.ADD, identifier, chunk));
@@ -89,66 +94,94 @@ public class Notify {
 		return true;
 	}
 	
-	/**
-	 * Add file to the file system to an unspecified slave
-	 * @param file_name the name of the file to be added to the system
-	 * @param contents the contents of the file to be added
-	 * @return contents of the file if it was successfully added, or an error message
-	 */
-	public byte[] add_file(String file_name, byte[] contents) {
-		TCPServerInfo slave_info = query_for_slave();
-		if(slave_info == null) {
-			System.out.println("Your file could not be added");
-			return null;
-		}
-		return add_file(file_name, contents, slave_info.getAddress(), slave_info.getPort());
-	}
-	
-	/**
-	 * Add a file to the file system using a specified slave 
-	 * @param file_name the name of the file to be added to the system
-	 * @param contents the contents of the file to be added
-	 * @param slave_address the address of the slave server
-	 * @param slave_port the port of the slave server
-	 * @return contents of the file if it was successfully added, or an error message
-	 */
-	public byte[] add_file(String file_name, byte[] contents, String slave_address, int slave_port) {
-		try {
-			FileContents f = new FileContents(file_name.getBytes(), contents);
-			TCPConnection connect = new TCPConnection(new Socket(slave_address, slave_port));
-			FileContentsPackage m = new FileContentsPackage(Constants.ADD, null, f);
-			connect.send(m);
-			FileContentsPackage resp = (FileContentsPackage) connect.read();
-			return resp.getMessage().getBytes();
-		} catch(IOException | NullPointerException e) {
-			e.printStackTrace();
-			return "An error occurred while adding your file".getBytes();
-		}		
-	}
+//	/**
+//	 * Add file to the file system to an unspecified slave
+//	 * @param file_name the name of the file to be added to the system
+//	 * @param contents the contents of the file to be added
+//	 * @return contents of the file if it was successfully added, or an error message
+//	 */
+//	public byte[] add_file(String file_name, byte[] contents) {
+//		TCPServerInfo slave_info = query_for_slave();
+//		if(slave_info == null) {
+//			System.out.println("Your file could not be added");
+//			return null;
+//		}
+//		return add_file(file_name, contents, slave_info.getAddress(), slave_info.getPort());
+//	}
+//	
+//	/**
+//	 * Add a file to the file system using a specified slave 
+//	 * @param file_name the name of the file to be added to the system
+//	 * @param contents the contents of the file to be added
+//	 * @param slave_address the address of the slave server
+//	 * @param slave_port the port of the slave server
+//	 * @return contents of the file if it was successfully added, or an error message
+//	 */
+//	public byte[] add_file(String file_name, byte[] contents, String slave_address, int slave_port) {
+//		try {
+//			FileContents f = new FileContents(file_name.getBytes(), contents);
+//			TCPConnection connect = new TCPConnection(new Socket(slave_address, slave_port));
+//			FileContentsPackage m = new FileContentsPackage(Constants.ADD, null, f);
+//			connect.send(m);
+//			FileContentsPackage resp = (FileContentsPackage) connect.read();
+//			return resp.getMessage().getBytes();
+//		} catch(IOException | NullPointerException e) {
+//			e.printStackTrace();
+//			return "An error occurred while adding your file".getBytes();
+//		}		
+//	}
 	
 	public byte[] read_file(String file_name) {
-		TCPServerInfo slave_info = query_for_slave();
-		return read_file(file_name, slave_info.getAddress(), slave_info.getPort());
+		master.send(new FileNamePackage(Constants.READ, file_name));
+		ChunkLocationPackage resp = (ChunkLocationPackage)master.read();
+		HashMap<Integer, List<TCPServerInfo>> chunk_locs = resp.get_chunk_locations();
+		SystemFile file = new SystemFile();
+		for(Integer start: chunk_locs.keySet()) {
+			List<TCPServerInfo> slaves = chunk_locs.get(start);
+			FileChunk chunk = null;
+			for(int i = 0; i < slaves.size(); i++) {
+				
+				if(chunk != null) break;
+				TCPServerInfo slave = slaves.get(i);
+				try {
+					TCPConnection connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
+					connect.send(new FileChunkInfoPackage(Constants.READ, file_name, start));
+					FileChunkPackage pkg = (FileChunkPackage)connect.read();
+					if(pkg != null) {
+						chunk = pkg.get_chunk();
+						break;
+					}
+			
+				} catch(IOException e) {
+					continue;
+				}
+			}
+//			System.out.println(chunk + " " + start);
+			file.add_chunk(chunk);
+		}
+		return file.get_byte_arr();
+//		TCPServerInfo slave_info = query_for_slave();
+//		return read_file(file_name, slave_info.getAddress(), slave_info.getPort());
 	}
 	
-	/**
-	 * Read a file from the file system
-	 * @param file_name the name of the file to be read
-	 * @return a byte array containing the contents of the file, or a byte[] array representing an error message
-	 * if an error occurs
-	 */
-	public byte[] read_file(String file_name, String slave_address, int slave_port) {
-		try {
-			TCPConnection connect = new TCPConnection(new Socket(slave_address, slave_port));
-			connect.send(new FileContentsPackage(Constants.READ, file_name, null));
-			FileContentsPackage resp = (FileContentsPackage) connect.read();
-			FileContents file = resp.getFileContents();
-			return file.getContents();
-		} catch(IOException |NullPointerException  e) {
-			e.printStackTrace();
-			return "An error occurred and your file could not be read".getBytes();
-		}
-	}
+//	/**
+//	 * Read a file from the file system
+//	 * @param file_name the name of the file to be read
+//	 * @return a byte array containing the contents of the file, or a byte[] array representing an error message
+//	 * if an error occurs
+//	 */
+//	public byte[] read_file(String file_name, String slave_address, int slave_port) {
+//		try {
+//			TCPConnection connect = new TCPConnection(new Socket(slave_address, slave_port));
+//			connect.send(new FileContentsPackage(Constants.READ, file_name, null));
+//			FileContentsPackage resp = (FileContentsPackage) connect.read();
+//			FileContents file = resp.getFileContents();
+//			return file.getContents();
+//		} catch(IOException |NullPointerException  e) {
+//			e.printStackTrace();
+//			return "An error occurred and your file could not be read".getBytes();
+//		}
+//	}
 	
 	
 	
@@ -159,29 +192,29 @@ public class Notify {
 //		return delete_file(file_name, slave_info.getAddress(), slave_info.getPort());
 	}
 	
-	/**
-	 * Delete a file from the file system
-	 * @param file_name the name of the file to be deleted
-	 * @return a byte array containing the contents of the file, or a byte[] array representing an error message
-	 * if an error occurs
-	 */
-	public byte[] delete_file(String file_name, String slave_address, int slave_port) {
-			FileContentsPackage m = new FileContentsPackage(Constants.DELETE,file_name, null);
-			FileContentsPackage resp;
-			try {
-				TCPConnection connect = new TCPConnection(new Socket(slave_address, slave_port));
-				connect.send(m);
-				resp = (FileContentsPackage) connect.read();
-			} catch(IOException e) {
-				e.printStackTrace();
-				return "An error occurred while deleting your file".getBytes();
-			}
-			FileContents file = resp.getFileContents();
-			if(file == null) {
-				return resp.getMessage().getBytes();
-			}
-			return file.getContents();
-	}
+//	/**
+//	 * Delete a file from the file system
+//	 * @param file_name the name of the file to be deleted
+//	 * @return a byte array containing the contents of the file, or a byte[] array representing an error message
+//	 * if an error occurs
+//	 */
+//	public byte[] delete_file(String file_name, String slave_address, int slave_port) {
+//			FileContentsPackage m = new FileContentsPackage(Constants.DELETE,file_name, null);
+//			FileContentsPackage resp;
+//			try {
+//				TCPConnection connect = new TCPConnection(new Socket(slave_address, slave_port));
+//				connect.send(m);
+//				resp = (FileContentsPackage) connect.read();
+//			} catch(IOException e) {
+//				e.printStackTrace();
+//				return "An error occurred while deleting your file".getBytes();
+//			}
+//			FileContents file = resp.getFileContents();
+//			if(file == null) {
+//				return resp.getMessage().getBytes();
+//			}
+//			return file.getContents();
+//	}
 	
 	/**
 	 * Currently used for testing

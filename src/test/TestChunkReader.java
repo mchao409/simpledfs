@@ -1,6 +1,7 @@
 package test;
 
 import static org.junit.jupiter.api.Assertions.*;
+import server.Constants;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -20,20 +21,6 @@ import file.FileChunk;
 import file.SystemFile;
 
 class TestChunkReader {
-	
-	public boolean equalsIgnorePadding(byte[] arr1, byte[] arr2) {
-		int len = Math.min(arr1.length, arr2.length);
-		for(int i = 0; i < len; i++) {
-			if(arr1[i] != arr2[i]) return false;
-		}
-		byte[] longer;
-		if(arr1.length > arr2.length) longer = arr1;
-		else longer = arr2;
-		for(int i = len; i < longer.length; i++) {
-			if(longer[i] != 0) return false;
-		}
-		return true;
-	}
 
 	@Test
 	void test() throws IOException {
@@ -48,7 +35,7 @@ class TestChunkReader {
 		byte[] data = Files.readAllBytes(open.toPath());
 
 		
-		assertTrue(equalsIgnorePadding(data,arr));
+		assertTrue(Constants.equalsIgnorePadding(data,arr));
 
 
 	}

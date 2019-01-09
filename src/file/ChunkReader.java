@@ -49,6 +49,6 @@ public class ChunkReader {
 		if(start_pos == current_pos) {
 			return null;
 		}
-		return new FileChunk(start_pos, current_pos-1, data);
+		return new FileChunk(start_pos, data);
 	}
 }
