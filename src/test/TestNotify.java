@@ -17,6 +17,7 @@ import network.Notify;
 import network.TCPConnection;
 import server.master_server.MasterServer;
 import server.slave_server.SlaveServer;
+import server.Constants;
 
 class TestNotify {
 
@@ -37,12 +38,13 @@ class TestNotify {
 			n.add_file("testing", "src/test/resources/chunkReaderTest.txt");
 			Thread.sleep(500);
 			byte[] resp = n.read_file("testing");
-			assertTrue(Arrays.equals(resp,  file_contents));
+			assertTrue(Constants.equalsIgnorePadding(resp,  file_contents));
 			
 			n.delete_file("testing");
 //			assertTrue(Arrays.equals(resp,  file_contents));
+			Thread.sleep(500);
 			resp = n.read_file("testing"); 
-			assertFalse(Arrays.equals(resp, file_contents));
+			assertFalse(Constants.equalsIgnorePadding(resp, file_contents));
 			
 			n.delete_file("testing");
 

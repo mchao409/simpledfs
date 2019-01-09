@@ -135,12 +135,14 @@ public class Notify {
 		master.send(new FileNamePackage(Constants.READ, file_name));
 		ChunkLocationPackage resp = (ChunkLocationPackage)master.read();
 		HashMap<Integer, List<TCPServerInfo>> chunk_locs = resp.get_chunk_locations();
+		if(chunk_locs == null) {
+			return null;
+		}
 		SystemFile file = new SystemFile();
 		for(Integer start: chunk_locs.keySet()) {
 			List<TCPServerInfo> slaves = chunk_locs.get(start);
 			FileChunk chunk = null;
 			for(int i = 0; i < slaves.size(); i++) {
-				
 				if(chunk != null) break;
 				TCPServerInfo slave = slaves.get(i);
 				try {
@@ -156,8 +158,9 @@ public class Notify {
 					continue;
 				}
 			}
-//			System.out.println(chunk + " " + start);
-			file.add_chunk(chunk);
+			if(chunk != null) {
+				file.add_chunk(chunk);
+			}
 		}
 		return file.get_byte_arr();
 //		TCPServerInfo slave_info = query_for_slave();

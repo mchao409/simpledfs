@@ -19,6 +19,7 @@ import message.TCPServerInfoPackage;
 import network.FileContents;
 import network.Notify;
 import network.TCPConnection;
+import server.Constants;
 
 class TestSlaveServer {
 
@@ -38,9 +39,10 @@ class TestSlaveServer {
 			// add file
 			File f = new File("src/test/resources/file2");
 			file_contents = Files.readAllBytes(f.toPath());
-			n.add_file("testing", file_contents);
+			n.add_file("testing", "src/test/resources/file2");
+			Thread.sleep(500);
 			byte[] resp = n.read_file("testing");
-			assertTrue(Arrays.equals(resp, file_contents));
+			assertTrue(Constants.equalsIgnorePadding(resp, file_contents));
 
 			// Ensure no exceptions
 //			resp = n.delete_file("should_not_exist");	
@@ -50,7 +52,6 @@ class TestSlaveServer {
 			fail();
 			return; 
 		}
-		System.out.println("here");
 		// two threads, one attempts to read, other attempts to delete
 		Thread read = new Thread(() -> {
 			Notify n = new Notify("127.0.0.1",master_port);

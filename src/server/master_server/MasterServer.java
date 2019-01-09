@@ -125,7 +125,10 @@ public class MasterServer extends TCPServer {
 	private synchronized void read(TCPConnection client, FileNamePackage pkg) {
 		String identifier = pkg.get_identifier();
 		FileLog f = file_storage_data.get(identifier);
-		client.send(new ChunkLocationPackage(Constants.READ, f.chunk_locs, identifier));
+		if(f == null) {
+			client.send(new ChunkLocationPackage(Constants.READ, null, identifier));
+		}
+		else client.send(new ChunkLocationPackage(Constants.READ, f.chunk_locs, identifier));
 	}
 	
 	/**

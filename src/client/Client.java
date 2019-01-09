@@ -42,20 +42,12 @@ public class Client {
 		System.out.println("Enter the path of the file to be added, or ### to go back");
 		String path = scan.nextLine();
 		if(path.equals("###")) return;
-		byte[] file_contents = null;
-		try {
-			File f = new File(path);
-			file_contents = Files.readAllBytes(f.toPath());	
-		} catch(IOException e) {
-			System.out.println("An error occurred when reading the file from your disk");
-			return;
-		}
 		
-		System.out.println("Enter a valid name for the file on the system, or ### to go back");
+		System.out.println("Enter a valid name for the file on the distributed file system, or ### to go back");
 		String name = scan.nextLine();
 		if(name.equals("###")) return;
-		String resp = new String(notify.add_file(name, file_contents));
-		System.out.println(resp);
+		notify.add_file(name, path);
+		System.out.println("Your file is being added");
 	}
 	
 	private void promptReadFile() throws IOException {

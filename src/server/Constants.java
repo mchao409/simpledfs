@@ -35,6 +35,8 @@ public class Constants {
 	 * @return
 	 */
 	public static boolean equalsIgnorePadding(byte[] arr1, byte[] arr2) {
+		if(arr1 == null && arr2 == null) return true;
+		if(arr1 == null || arr2 == null) return false;
 		int len = Math.min(arr1.length, arr2.length);
 		for(int i = 0; i < len; i++) {
 			if(arr1[i] != arr2[i]) return false;
