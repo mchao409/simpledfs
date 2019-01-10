@@ -16,6 +16,7 @@ public class Constants {
 	public static final String GET_ALL_FILES = "GET_ALL_FILES";
 	public static final String CHUNK_ADDED = "CHUNK_ADDED";
 	public static final String CHUNK_DELETED = "CHUNK_DELETED";
+	public static final String CHECK_FILE_EXISTS = "CHECK_FILE_EXISTS";
 	
 	
 	public static final String ADD_SUCCESS = "ADDSUCCESS"; 

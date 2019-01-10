@@ -24,10 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class MasterServer extends TCPServer {
-	/**
-	 * Set of all file paths stored
-	 */
-//	private HashSet<String> file_names;	
 
 	/**
 	 * Maps from TCPConnection to a slave server to an Integer representing the number of clients the slave 
@@ -46,7 +42,6 @@ public class MasterServer extends TCPServer {
 	
 	public MasterServer(int port) throws IOException {
 		super(port);
-//		file_names = new HashSet<String>();
 		num_connects = new HashMap<TCPServerInfo, Integer>();
 		file_storage_data = new HashMap<String,FileLog>();
 	}
@@ -54,9 +49,6 @@ public class MasterServer extends TCPServer {
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
 		String command = msg.getCommand();
 		switch(command) {
-		case Constants.ADD: // notification from slave server that a client wishes to add
-//			add_file(s, (FileContentsPackage)msg);
-			break;
 		
 		case Constants.CHUNK_ADDED:
 			log_added_chunk((FileChunkInfoPackage) msg); // slave server notifies that it has added a chunk
@@ -66,11 +58,11 @@ public class MasterServer extends TCPServer {
 			log_deleted_chunk((FileChunkInfoPackage) msg);
 			break;
 			
-		case Constants.READ:
+		case Constants.READ: // Query from client to read a file
 			read(s, (FileNamePackage) msg);
 			break;
 			
-		case Constants.DELETE: // notification from slave server that a client wishes to delete
+		case Constants.DELETE: // notification from client to delete a file
 			delete_file(s,(FileNamePackage)msg);
 			break;
 			
@@ -105,6 +97,9 @@ public class MasterServer extends TCPServer {
 		}
 	}
 	
+	/**
+	 * Log an added chunk and its location
+	 */
 	private synchronized void log_added_chunk(FileChunkInfoPackage pkg) {
 		String identifier = pkg.get_identifier();
 		if(file_storage_data.get(identifier) == null) {
@@ -114,6 +109,9 @@ public class MasterServer extends TCPServer {
 		file_storage_data.get(identifier).add_chunk_location(pkg.get_start(), pkg.get_slave());
 	}
 	
+	/**
+	 * Log a deleted chunk and its location
+	 */
 	private synchronized void log_deleted_chunk(FileChunkInfoPackage pkg) {
 		String identifier = pkg.get_identifier();
 		if(file_storage_data.get(identifier) != null) {
@@ -122,6 +120,9 @@ public class MasterServer extends TCPServer {
 		}
 	}
 	
+	/**
+	 * Send information about locations of all chunks of a file to client
+	 */
 	private synchronized void read(TCPConnection client, FileNamePackage pkg) {
 		String identifier = pkg.get_identifier();
 		FileLog f = file_storage_data.get(identifier);
@@ -132,14 +133,11 @@ public class MasterServer extends TCPServer {
 	}
 	
 	/**
-	 * Handle a delete request to the file system
-	 * @param slave the slave server that received the request from the client
-	 * @param msg
+	 * Handle a delete request to the file system, notify necessary slave servers to delete
 	 * @throws IOException
 	 */
 	private synchronized void delete_file(TCPConnection client, FileNamePackage msg) throws IOException {
 		String identifier = msg.get_identifier();
-
 		FileLog log = file_storage_data.get(identifier);
 		if(log == null) {
 			System.out.println("File does not exist");

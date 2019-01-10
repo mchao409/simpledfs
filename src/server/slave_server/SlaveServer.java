@@ -27,7 +27,6 @@ public class SlaveServer extends TCPServer {
 	private String master_ip;
 	private int master_port;
 	private TCPConnection master;
-	private HashSet<String> file_paths;
 	private String DB_PATH;
 	private TCPServerInfo slave_info;
 	
@@ -35,7 +34,6 @@ public class SlaveServer extends TCPServer {
 		super(port);
 		this.master_ip = master_ip;
 		this.master_port = master_port;
-		file_paths = new HashSet<String>();
 		slave_info = new TCPServerInfo("127.0.0.1", port);
 		
 		try {
@@ -68,52 +66,40 @@ public class SlaveServer extends TCPServer {
 	 */
 	private void get_server_data() {
 		// Send master an initial query to get all the server data
-		master.send(new TCPServerInfoPackage(Constants.NEW_SLAVE, new TCPServerInfo("127.0.0.1", port))); // TODO fix ip
-		TCPServerInfoPackage slave_to_get_from = (TCPServerInfoPackage) master.read();
-		TCPServerInfo slave = slave_to_get_from.getServerInfo();
-		if(slave == null) {
-			return;
-		}
-		try {
-			TCPConnection slave_connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
-			slave_connect.send(new TCPServerInfoPackage(Constants.GET_ALL_FILES, slave_info));
-			MultipleFilesPackage pkg = (MultipleFilesPackage) slave_connect.read();
-			for(FileContents f : pkg) {
-				add_file_to_db(f); 
-			}
-		} catch(IOException e) {
-			System.out.println("Could not retrieve server data");
-		}
+		master.send(new TCPServerInfoPackage(Constants.NEW_SLAVE, new TCPServerInfo("127.0.0.1", port)));
+		
+//		TCPServerInfoPackage slave_to_get_from = (TCPServerInfoPackage) master.read();
+//		TCPServerInfo slave = slave_to_get_from.getServerInfo();
+//		if(slave == null) {
+//			return;
+//		}
+//		try {
+//			TCPConnection slave_connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
+//			slave_connect.send(new TCPServerInfoPackage(Constants.GET_ALL_FILES, slave_info));
+//			MultipleFilesPackage pkg = (MultipleFilesPackage) slave_connect.read();
+//			for(FileContents f : pkg) {
+//				add_file_to_db(f); 
+//			}
+//		} catch(IOException e) {
+//			System.out.println("Could not retrieve server data");
+//		}
 	}
 	
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
 		String command = msg.getCommand();
 		switch(command) {
-		case Constants.ADD: // notification from client to add a file
-			add_file(s, (FileChunkPackage)msg);
+		case Constants.ADD: // notification from client to add a chunk
+			add_chunk(s, (FileChunkPackage)msg);
 			break;
 			
-		case Constants.READ: // notification from client to read a file
+		case Constants.READ: // notification from client to read a chunk
 			read_file(s, (FileChunkInfoPackage) msg);
 			break;
 			
-		case Constants.DELETE: // notification from master to delete a file
+		case Constants.DELETE: // notification from master to delete a chunk
 			delete_file(s, (FileChunkInfoPackage)msg);
 			break;
-		
-		case Constants.PRINT_ALL:  // used for debugging
-			System.out.println(file_paths);
-			break;
-		
-//		case Constants.ADD_MASTER: // notification from master a file has been added to the system
-//			FileContents file_to_add = ((FileContentsPackage)msg).getFileContents();
-//			add_file_to_db(file_to_add);
-//			break;
-			
-//		case Constants.DELETE_MASTER: // notification from master a file has been deleted from the system
-//			FileContents file_to_delete = ((FileContentsPackage)msg).getFileContents();
-//			delete_file_from_db(file_to_delete);
-//			break;
+
 		
 		case Constants.GET_ALL_FILES: // send data about all files over
 //			get_all_files(s);
@@ -140,34 +126,13 @@ public class SlaveServer extends TCPServer {
 	/**
 	 * Adds a new file to the server
 	 */
-	private synchronized void add_file(TCPConnection s, FileChunkPackage msg) throws IOException {
+	private synchronized void add_chunk(TCPConnection s, FileChunkPackage msg) throws IOException {
 //		notify_master_client(true);
 		if(add_chunk_to_db(msg)) {
 			master.send(new FileChunkInfoPackage(Constants.CHUNK_ADDED, msg.get_identifier(),
 					msg.get_chunk().get_start(), slave_info));
 			// todo notify master chunk was added
 		}
-
-//		notify_master_client(false);
-		
-//		notify_master_client(true);
-//		FileContentsPackage resp;
-//		synchronized(master) {
-//			msg.addSender(new TCPServerInfo("127.0.0.1", port));
-//			master.send(msg);
-//			resp = (FileContentsPackage) master.read();
-//		}
-//
-//		FileContents file = resp.getFileContents();
-//		if(resp.getMessage().equals(Constants.ADD_SUCCESS)) {
-//			add_file_to_db(file);
-//			String file_name = new String(file.getName());
-//			s.send(new FileContentsPackage(Constants.ADD, "File successfully added", null));
-//		}
-//		else {
-//			s.send(new FileContentsPackage(Constants.ADD, "File could not be added", null));
-//		}
-//		notify_master_client(false);
 	}
 	
 	private boolean add_chunk_to_db(FileChunkPackage pkg) {
@@ -180,25 +145,7 @@ public class SlaveServer extends TCPServer {
 		}
 		return true;
 	}
-	
-//	private void read_chunk_from_db(TCPConnection s, FileChunkInfoPackage pkg) {
-//		notify_master_client(true);
-//		String save_name = pkg.get_identifier() + pkg.get_start() + "_" + pkg.get_end();
-//		String path = DB_PATH + save_name;
-//		
-//	}
 
-	/**
-	 * Save file to database
-	 */
-	private void add_file_to_db(FileContents file) throws IOException {
-		String file_name = new String(file.getName());
-		Files.write(Paths.get(DB_PATH + file_name), file.getContents());
-		synchronized(file_paths) {
-			file_paths.add(file_name);
-		}
-	}
-	
 	/**
 	 * Sends the the contents of a file
 	 */
@@ -231,46 +178,13 @@ public class SlaveServer extends TCPServer {
 	 * @throws IOException
 	 */
 	private synchronized void delete_file(TCPConnection s, FileChunkInfoPackage msg) throws IOException {
+		notify_master_client(true);
 		String save_name = msg.get_identifier() + msg.get_start();
 		File f = new File(DB_PATH + save_name);
 		f.delete();
 		master.send(new FileChunkInfoPackage(Constants.CHUNK_DELETED, msg.get_identifier(), msg.get_start(), slave_info));
-		
-//		notify_master_client(true);
-//		FileContentsPackage resp;
-//		synchronized(master) {
-//			msg.addSender(new TCPServerInfo("127.0.0.1", port));
-//			master.send(msg);
-//			resp = (FileContentsPackage) master.read();
-//		}
-//		String message = resp.getMessage();
-//		if(message.equals(Constants.FILE_DOES_NOT_EXIST)) {
-//			s.send(new FileContentsPackage(Constants.DELETE, "The file you chose does not exist", null));
-//		}
-//		else if (message.equals(Constants.DELETE_SUCCESS)) {
-//			FileContents file = resp.getFileContents();
-//			String file_name = new String(file.getName());
-//			byte[] contents = delete_file_from_db(file);
-//			s.send(new FileContentsPackage(Constants.DELETE, null, new FileContents(file_name.getBytes(), contents)));
-//		}
-//		else s.send(null); // TODO handle
-//		notify_master_client(false);
+		notify_master_client(false);
 	}
-	
-	
-	
-//	/**
-//	 * Delete file from database
-//	 */
-//	private byte[] delete_file_from_db(FileContents file) throws IOException {
-//		String file_name = new String(file.getName());
-//		String path = DB_PATH + file_name;
-//		File f = new File(path);
-//		byte[] contents = Files.readAllBytes(f.toPath());
-//		f.delete();
-//		file_paths.remove(file_name);
-//		return contents;
-//	}
 	
 //	/**
 //	 * Send all db data
