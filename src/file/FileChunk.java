@@ -12,6 +12,9 @@ public class FileChunk implements Comparable<FileChunk>, Serializable {
 	 */
 	private byte[] chunk;
 	
+	/**
+	 * The location of the original file that this chunk begins with
+	 */
 	private int start;
 	
 //	private ChunkInterval interval;

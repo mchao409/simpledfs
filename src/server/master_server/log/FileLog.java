@@ -9,6 +9,10 @@ import file.ChunkInterval;
 import network.TCPServerInfo;
 import server.Constants;
 
+/**
+ * Contains information about the locations of chunks of a single file (ie. which slave servers the chunks are saved)
+ *
+ */
 public class FileLog {
 	
 	/**
@@ -28,6 +32,11 @@ public class FileLog {
 		this.identifier = identifier;
 	}
 	
+	/**
+	 * Log an added chunk
+	 * @param chunk_start the location of the file the chunk begins
+	 * @param slave the slave server the chunk was saved to
+	 */
 	public synchronized void add_chunk_location(int chunk_start, TCPServerInfo slave) {
 		if(chunk_locs.get(chunk_start) == null) {
 			List<TCPServerInfo> slaves = new ArrayList<TCPServerInfo>();
@@ -38,10 +47,25 @@ public class FileLog {
 		}
 	}
 	
+	/**
+	 * Remove a location of a chunk
+	 * @param chunk_start the location of the file the chunk begins
+	 * @param slave the slave server the chunk is no longer saved on
+	 */
 	public synchronized void remove_slave_location(int chunk_start, TCPServerInfo slave) {
 		if(chunk_locs.get(chunk_start) != null ) {
 			chunk_locs.get(chunk_start).remove(slave);
+			if(chunk_locs.get(chunk_start).size() == 0) {
+				chunk_locs.remove(chunk_start);
+			}
 		}
+	}
+	
+	/**
+	 * Get the number of chunks that have locations logged
+	 */
+	public synchronized int get_num_chunks() {
+		return chunk_locs.keySet().size();
 	}
 		
 	@Override

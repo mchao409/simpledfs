@@ -25,9 +25,10 @@ class TestNotify {
 	void test() throws InterruptedException {
 		int master_port = 9000;
 		int slave_starting_port = 8000;
+		int num_slaves = 5;
 		RunServers m = new RunServers();
 		m.start_master_server("127.0.0.1", master_port);
-		m.start_one_slave_server(slave_starting_port);
+		m.start_slave_servers(slave_starting_port, num_slaves);
 		
 		try {
 			Thread.sleep(1000); // give time for server to start
@@ -36,21 +37,18 @@ class TestNotify {
 			byte[] file_contents = Files.readAllBytes(f.toPath());
 			Notify n = new Notify("127.0.0.1", master_port);
 			n.add_file("testing", "src/test/resources/chunkReaderTest.txt");
-			Thread.sleep(500);
 			byte[] resp = n.read_file("testing");
 			assertTrue(Constants.equalsIgnorePadding(resp,  file_contents));
 			
 			n.delete_file("testing");
-//			assertTrue(Arrays.equals(resp,  file_contents));
-			Thread.sleep(500);
+
 			resp = n.read_file("testing"); 
-			assertFalse(Constants.equalsIgnorePadding(resp, file_contents));
+			assertTrue(resp == null);
 			
 			n.delete_file("testing");
 
-			// Ensure exceptions are handled properly
-			n.delete_file("should_not_exist");			
-			resp = n.read_file("should_not_exist");
+			n.delete_file("should_not_exist");		
+			assertTrue(n.read_file("should_not_exist") == null);
 			
 		} catch (IOException e) {
 			e.printStackTrace();

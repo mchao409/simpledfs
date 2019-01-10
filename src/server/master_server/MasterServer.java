@@ -117,6 +117,9 @@ public class MasterServer extends TCPServer {
 		if(file_storage_data.get(identifier) != null) {
 			FileLog f = file_storage_data.get(identifier);
 			f.remove_slave_location(pkg.get_start(), pkg.get_slave());
+			if(f.get_num_chunks() == 0) {
+				file_storage_data.remove(identifier);
+			}
 		}
 	}
 	
@@ -140,7 +143,7 @@ public class MasterServer extends TCPServer {
 		String identifier = msg.get_identifier();
 		FileLog log = file_storage_data.get(identifier);
 		if(log == null) {
-			System.out.println("File does not exist");
+			System.out.println("The file named \"" + identifier + "\" does not exist on the master server");
 			return;
 		}
 		

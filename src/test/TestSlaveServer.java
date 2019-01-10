@@ -40,13 +40,13 @@ class TestSlaveServer {
 			File f = new File("src/test/resources/file2");
 			file_contents = Files.readAllBytes(f.toPath());
 			n.add_file("testing", "src/test/resources/file2");
-			Thread.sleep(500);
 			byte[] resp = n.read_file("testing");
 			assertTrue(Constants.equalsIgnorePadding(resp, file_contents));
 
 			// Ensure no exceptions
-//			resp = n.delete_file("should_not_exist");	
+			n.delete_file("should_not_exist");	
 			resp = n.read_file("should_not_exist");
+			assertTrue(resp == null);
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail();
@@ -60,7 +60,7 @@ class TestSlaveServer {
 		});
 		read.start();
 		Notify n = new Notify("127.0.0.1", master_port);
-//		byte[] resp = n.delete_file("testing");
+		n.delete_file("testing");
 
 	}
 }

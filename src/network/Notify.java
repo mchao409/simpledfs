@@ -35,6 +35,10 @@ public class Notify {
 		}
 	}
 	
+	/**
+	 * Query the master for a list of least occupied slaves. The size of the list depends on a constant in MasterServer
+	 * @return
+	 */
 	private List<TCPServerInfo> query_for_slaves() {
 		synchronized(master) {
 			master.send(new QueryPackage(Constants.CLIENT));
@@ -77,13 +81,18 @@ public class Notify {
 				}
 			}
 		}
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		return true;
 	}
 	
 	/**
 	 * Read a file from the distributed file system
 	 * @param file_name
-	 * @return a byte array representing the contents of the file
+	 * @return a byte array representing the contents of the file, null if the file does not exist
 	 */
 	public byte[] read_file(String file_name) {
 		master.send(new FileNamePackage(Constants.READ_FILE, file_name));
@@ -125,6 +134,11 @@ public class Notify {
 	 */
 	public void delete_file(String file_name) {
 		master.send(new FileNamePackage(Constants.DELETE_FILE, file_name));
+		try {
+			Thread.sleep(1000);
+		} catch(InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**
