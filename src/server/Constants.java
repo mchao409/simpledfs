@@ -20,15 +20,21 @@ public class Constants {
 	public static final String CHUNK_ADDED = "CHUNK_ADDED";
 	public static final String CHUNK_DELETED = "CHUNK_DELETED";
 	public static final String CHECK_FILE_EXISTS = "CHECK_FILE_EXISTS";
-	
 	public static final String ADD_SUCCESS = "ADDSUCCESS"; 
 	public static final String FILE_ALREADY_EXISTS = "FILEALREADYEXISTS";
-	
 	public static final String DELETE_SUCCESS = "DELETESUCCESS";
 	public static final String FILE_DOES_NOT_EXIST = "FILEDOESNOTEXIST";
 	
-	public static final String CURRENTLY_HANDLING_CLIENT = "CURRENTLYHANDLINGCLIENT";
-	public static final String DONE_HANDLING_CLIENT = "DONEHANDLINGCLIENT";
+	public static final String CURRENTLY_HANDLING_CLIENT = "CURRENTLY_HANDLING_CLIENT";
+	public static final String DONE_HANDLING_CLIENT = "DONE_HANDLING_CLIENT";
+	
+	public static final String IS_FILE_ADDED = "IS_FILE_ADDED";
+	public static final String FILE_NOT_ADDED = "FILE_NOT_ADDED";
+	public static final String FILE_ADDED = "FILE_ADDED";
+	
+	public static final String IS_FILE_DELETED = "IS_FILE_DELETED";
+	public static final String FILE_NOT_DELETED = "FILE_NOT_DELTED";
+	public static final String FILE_DELETED = "FILE_DELETED";
 	
 	public static final int CHUNK_SIZE = 200;
 	

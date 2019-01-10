@@ -26,6 +26,11 @@ public class FileLog {
 	 */
 	private String identifier;
 	
+	/**
+	 * Total number of chunks in the file
+	 */
+	private int num_chunks;
+	
 	
 	public FileLog(String identifier) {
 		chunk_locs = new HashMap<Integer, List<TCPServerInfo>>();

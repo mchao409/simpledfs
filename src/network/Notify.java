@@ -16,7 +16,7 @@ import message.ChunkLocationPackage;
 import message.FileChunkInfoPackage;
 import message.FileChunkPackage;
 import message.FileContentsPackage;
-import message.FileNamePackage;
+import message.FileInfoPackage;
 import message.TCPServerInfoPackage;
 import server.Constants;
 
@@ -67,6 +67,7 @@ public class Notify {
 			System.out.println("No file could be found at " + path_to_file);
 			return false;
 		}
+		int num_chunks = 0;
 		ChunkReader reader = new ChunkReader(f);
 		while(reader.available()) {
 			FileChunk chunk = reader.read_chunk();
@@ -80,11 +81,22 @@ public class Notify {
 					e.printStackTrace();
 				}
 			}
+			num_chunks++;
 		}
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		
+		boolean ready = false;
+		while(!ready) {
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			master.send(new FileInfoPackage(Constants.IS_FILE_ADDED,file_name, num_chunks));
+			QueryPackage resp = (QueryPackage) master.read();
+			if(resp.getCommand().equals(Constants.FILE_ADDED)) {
+				ready = true;
+			}
+			
 		}
 		return true;
 	}
@@ -95,7 +107,7 @@ public class Notify {
 	 * @return a byte array representing the contents of the file, null if the file does not exist
 	 */
 	public byte[] read_file(String file_name) {
-		master.send(new FileNamePackage(Constants.READ_FILE, file_name));
+		master.send(new FileInfoPackage(Constants.READ_FILE, file_name));
 		ChunkLocationPackage resp = (ChunkLocationPackage)master.read();
 		HashMap<Integer, List<TCPServerInfo>> chunk_locs = resp.get_chunk_locations();
 		if(chunk_locs == null) {
@@ -133,12 +145,25 @@ public class Notify {
 	 * @param file_name
 	 */
 	public void delete_file(String file_name) {
-		master.send(new FileNamePackage(Constants.DELETE_FILE, file_name));
-		try {
-			Thread.sleep(1000);
-		} catch(InterruptedException e) {
-			e.printStackTrace();
+		master.send(new FileInfoPackage(Constants.DELETE_FILE, file_name));
+		boolean deleted = false;
+		while(!deleted) {
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			master.send(new FileInfoPackage(Constants.IS_FILE_DELETED, file_name));
+			QueryPackage resp = (QueryPackage)master.read();
+			if(resp.getCommand().equals(Constants.FILE_DELETED)) {
+				deleted = true;
+			}
 		}
+//		try {
+//			Thread.sleep(1000);
+//		} catch(InterruptedException e) {
+//			e.printStackTrace();
+//		}
 	}
 	
 	/**

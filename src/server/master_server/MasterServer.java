@@ -6,7 +6,7 @@ import message.ChunkLocationPackage;
 import message.FileChunkInfoPackage;
 import message.FileChunkPackage;
 import message.FileContentsPackage;
-import message.FileNamePackage;
+import message.FileInfoPackage;
 import message.MessagePackage;
 import message.QueryPackage;
 import message.TCPServerInfoPackage;
@@ -35,7 +35,6 @@ public class MasterServer extends TCPServer {
 	 * Number of slave servers that should hold each chunk
 	 */
 	private static int CHUNK_DISTR_CONST = 3;
-	
 
 	private HashMap<String, FileLog> file_storage_data;
 	
@@ -50,6 +49,14 @@ public class MasterServer extends TCPServer {
 		String command = msg.getCommand();
 		switch(command) {
 		
+		case Constants.IS_FILE_ADDED: // client checks if a file has been completely added 
+			is_file_added(s, (FileInfoPackage)msg);
+			break;
+		
+		case Constants.IS_FILE_DELETED:
+			is_file_deleted(s, (FileInfoPackage) msg);
+			break;
+		
 		case Constants.CHUNK_ADDED:
 			log_added_chunk((FileChunkInfoPackage) msg); // slave server notifies that it has added a chunk
 			break;
@@ -59,11 +66,11 @@ public class MasterServer extends TCPServer {
 			break;
 			
 		case Constants.READ_FILE: // Query from client to read a file
-			read(s, (FileNamePackage) msg);
+			read(s, (FileInfoPackage) msg);
 			break;
 			
 		case Constants.DELETE_FILE: // notification from client to delete a file
-			delete_file(s,(FileNamePackage)msg);
+			delete_file(s,(FileInfoPackage)msg);
 			break;
 			
 		case Constants.NEW_SLAVE: // new minion connection
@@ -96,6 +103,35 @@ public class MasterServer extends TCPServer {
 			break;
 		}
 	}
+
+	/**
+	 * Checks if a file has been completely added (ie each chunk has been added at least once)
+	 * 	 and sends an appropriate response to the client
+	 * @param client
+	 * @param pkg
+	 */
+	private synchronized void is_file_added(TCPConnection client, FileInfoPackage pkg) {
+		String identifier = pkg.get_identifier();
+		if(file_storage_data.get(identifier) == null) {
+			client.send(new QueryPackage(Constants.FILE_DOES_NOT_EXIST));
+		}
+		else if(file_storage_data.get(identifier).get_num_chunks() != pkg.get_num_chunks()) {
+			client.send(new QueryPackage(Constants.FILE_NOT_ADDED));
+		}
+		else {
+			client.send(new QueryPackage(Constants.FILE_ADDED));
+		}
+	}
+	
+	private synchronized void is_file_deleted(TCPConnection client, FileInfoPackage pkg) {
+		String identifier = pkg.get_identifier();
+		if(file_storage_data.get(identifier) == null) {
+			client.send(new QueryPackage(Constants.FILE_DELETED));
+		}
+		else {
+			client.send(new QueryPackage(Constants.FILE_NOT_DELETED));
+		}
+	}
 	
 	/**
 	 * Log an added chunk and its location
@@ -126,7 +162,7 @@ public class MasterServer extends TCPServer {
 	/**
 	 * Send information about locations of all chunks of a file to client
 	 */
-	private synchronized void read(TCPConnection client, FileNamePackage pkg) {
+	private synchronized void read(TCPConnection client, FileInfoPackage pkg) {
 		String identifier = pkg.get_identifier();
 		FileLog f = file_storage_data.get(identifier);
 		if(f == null) {
@@ -139,7 +175,7 @@ public class MasterServer extends TCPServer {
 	 * Handle a delete request to the file system, notify necessary slave servers to delete
 	 * @throws IOException
 	 */
-	private synchronized void delete_file(TCPConnection client, FileNamePackage msg) throws IOException {
+	private synchronized void delete_file(TCPConnection client, FileInfoPackage msg) throws IOException {
 		String identifier = msg.get_identifier();
 		FileLog log = file_storage_data.get(identifier);
 		if(log == null) {
