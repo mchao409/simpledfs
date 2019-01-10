@@ -88,15 +88,15 @@ public class SlaveServer extends TCPServer {
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {
 		String command = msg.getCommand();
 		switch(command) {
-		case Constants.ADD: // notification from client to add a chunk
+		case Constants.ADD_CHUNK: // notification from client to add a chunk
 			add_chunk(s, (FileChunkPackage)msg);
 			break;
 			
-		case Constants.READ: // notification from client to read a chunk
+		case Constants.READ_CHUNK: // notification from client to read a chunk
 			read_file(s, (FileChunkInfoPackage) msg);
 			break;
 			
-		case Constants.DELETE: // notification from master to delete a chunk
+		case Constants.DELETE_CHUNK: // notification from master to delete a chunk
 			delete_file(s, (FileChunkInfoPackage)msg);
 			break;
 
@@ -167,7 +167,7 @@ public class SlaveServer extends TCPServer {
 		}
 		else {
 			FileChunk chunk = new FileChunk(start, contents);
-			s.send(new FileChunkPackage(Constants.READ, identifier, chunk));
+			s.send(new FileChunkPackage(Constants.READ_CHUNK, identifier, chunk));
 		}
 		notify_master_client(false);
 	}

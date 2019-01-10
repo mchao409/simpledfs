@@ -58,11 +58,11 @@ public class MasterServer extends TCPServer {
 			log_deleted_chunk((FileChunkInfoPackage) msg);
 			break;
 			
-		case Constants.READ: // Query from client to read a file
+		case Constants.READ_FILE: // Query from client to read a file
 			read(s, (FileNamePackage) msg);
 			break;
 			
-		case Constants.DELETE: // notification from client to delete a file
+		case Constants.DELETE_FILE: // notification from client to delete a file
 			delete_file(s,(FileNamePackage)msg);
 			break;
 			
@@ -127,9 +127,9 @@ public class MasterServer extends TCPServer {
 		String identifier = pkg.get_identifier();
 		FileLog f = file_storage_data.get(identifier);
 		if(f == null) {
-			client.send(new ChunkLocationPackage(Constants.READ, null, identifier));
+			client.send(new ChunkLocationPackage(Constants.READ_FILE, null, identifier));
 		}
-		else client.send(new ChunkLocationPackage(Constants.READ, f.chunk_locs, identifier));
+		else client.send(new ChunkLocationPackage(Constants.READ_FILE, f.chunk_locs, identifier));
 	}
 	
 	/**
@@ -149,7 +149,7 @@ public class MasterServer extends TCPServer {
 			List<TCPServerInfo> slaves = chunk_locs.get(start);
 			for(TCPServerInfo slave : slaves) {
 				TCPConnection connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
-				connect.send(new FileChunkInfoPackage(Constants.DELETE, identifier, start));
+				connect.send(new FileChunkInfoPackage(Constants.DELETE_CHUNK, identifier, start));
 			}
 		}
 	}

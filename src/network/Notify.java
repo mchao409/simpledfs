@@ -71,7 +71,7 @@ public class Notify {
 				if(slave_info == null) continue;
 				try {
 					TCPConnection connect = new TCPConnection(new Socket(slave_info.getAddress(), slave_info.getPort()));
-					connect.send(new FileChunkPackage(Constants.ADD, file_name, chunk));
+					connect.send(new FileChunkPackage(Constants.ADD_CHUNK, file_name, chunk));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -86,7 +86,7 @@ public class Notify {
 	 * @return a byte array representing the contents of the file
 	 */
 	public byte[] read_file(String file_name) {
-		master.send(new FileNamePackage(Constants.READ, file_name));
+		master.send(new FileNamePackage(Constants.READ_FILE, file_name));
 		ChunkLocationPackage resp = (ChunkLocationPackage)master.read();
 		HashMap<Integer, List<TCPServerInfo>> chunk_locs = resp.get_chunk_locations();
 		if(chunk_locs == null) {
@@ -101,7 +101,7 @@ public class Notify {
 				TCPServerInfo slave = slaves.get(i);
 				try {
 					TCPConnection connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
-					connect.send(new FileChunkInfoPackage(Constants.READ, file_name, start));
+					connect.send(new FileChunkInfoPackage(Constants.READ_CHUNK, file_name, start));
 					FileChunkPackage pkg = (FileChunkPackage)connect.read();
 					if(pkg != null) {
 						chunk = pkg.get_chunk();
@@ -124,7 +124,7 @@ public class Notify {
 	 * @param file_name
 	 */
 	public void delete_file(String file_name) {
-		master.send(new FileNamePackage(Constants.DELETE, file_name));
+		master.send(new FileNamePackage(Constants.DELETE_FILE, file_name));
 	}
 	
 	/**
