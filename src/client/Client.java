@@ -6,16 +6,14 @@ import java.net.*;
 import java.nio.file.Files;
 import java.util.Scanner;
 
+import main.RunServers;
+
 public class Client {
-	TCPConnection master_connection;
 	Scanner scan;
 	private Notify notify;
 	public Client(int masterPort) throws IOException {
-		Socket master = new Socket("127.0.0.1", masterPort);
-		master_connection = new TCPConnection(master);
 		scan = new Scanner(System.in);
 		notify = new Notify("127.0.0.1", masterPort);
-		prompt();
 	}
 	
 	private void prompt() throws IOException {
@@ -71,9 +69,16 @@ public class Client {
 
     public static void main(String[] args) {
     	try {
-        	Client c = new Client(7999);
+    		RunServers run = new RunServers();
+    		run.start_master_server("127.0.0.1", 9000);
+    		run.start_slave_servers(8000, 10);
+    		Thread.sleep(1000);
+        	Client c = new Client(9000);
+        	c.prompt();
     	} catch(IOException e) {
-    		System.out.println("An error occurred, please try again later.");
-    	}
+    		e.printStackTrace();
+    	} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
     }
 }

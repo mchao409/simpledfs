@@ -48,41 +48,16 @@ public class SlaveServer extends TCPServer {
 	}
 	
 	@Override() 
-	public void listen() {
-		Thread t = new Thread(() -> {
-			try {
-				super.listen();
-			} catch(IOException e) {
-				e.printStackTrace();
-			}
-		}); 
-		t.start();
-		get_server_data();
-
+	public void listen() throws IOException {
+		notify_master();
+		super.listen();
 	}
 	
 	/**
-	 * Retrieves all of the files from another slave server
+	 * Notify master of slave server startup
 	 */
-	private void get_server_data() {
-		// Send master an initial query to get all the server data
+	private void notify_master() {
 		master.send(new TCPServerInfoPackage(Constants.NEW_SLAVE, new TCPServerInfo("127.0.0.1", port)));
-		
-//		TCPServerInfoPackage slave_to_get_from = (TCPServerInfoPackage) master.read();
-//		TCPServerInfo slave = slave_to_get_from.getServerInfo();
-//		if(slave == null) {
-//			return;
-//		}
-//		try {
-//			TCPConnection slave_connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
-//			slave_connect.send(new TCPServerInfoPackage(Constants.GET_ALL_FILES, slave_info));
-//			MultipleFilesPackage pkg = (MultipleFilesPackage) slave_connect.read();
-//			for(FileContents f : pkg) {
-//				add_file_to_db(f); 
-//			}
-//		} catch(IOException e) {
-//			System.out.println("Could not retrieve server data");
-//		}
 	}
 	
 	protected void handle_input(TCPConnection s, MessagePackage msg) throws IOException {

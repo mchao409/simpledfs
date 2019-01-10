@@ -26,10 +26,15 @@ import java.nio.file.Paths;
 public class MasterServer extends TCPServer {
 
 	/**
-	 * Maps from TCPConnection to a slave server to an Integer representing the number of clients the slave 
+	 * Maps from TCPServerInfo to a slave server to an Integer representing the number of clients the slave 
 	 * server is handling currently
 	 */
 	private HashMap<TCPServerInfo, Integer> num_connects;
+	
+	/**
+	 * Maps from TCPServerInfo to an Integer representing the number of chunks saved on the slave server currently
+	 */
+	private HashMap<TCPServerInfo, Integer> num_chunks_saved;
 	
 	/**
 	 * Number of slave servers that should hold each chunk
@@ -42,6 +47,7 @@ public class MasterServer extends TCPServer {
 	public MasterServer(int port) throws IOException {
 		super(port);
 		num_connects = new HashMap<TCPServerInfo, Integer>();
+		num_chunks_saved = new HashMap<TCPServerInfo, Integer>();
 		file_storage_data = new HashMap<String,FileLog>();
 	}
 	
@@ -80,10 +86,6 @@ public class MasterServer extends TCPServer {
 		case Constants.CLIENT: // initial client query
 			client_initial_query(s, msg);
 			break;
-			
-//		case Constants.PRINT_ALL:
-//			System.out.println(file_names);
-//			break;
 			
 		case Constants.HANDLING_CLIENT: // notification that slave is handling a client
 			TCPServerInfoPackage slave = (TCPServerInfoPackage) msg;
@@ -143,6 +145,13 @@ public class MasterServer extends TCPServer {
 			file_storage_data.put(identifier, f);
 		}
 		file_storage_data.get(identifier).add_chunk_location(pkg.get_start(), pkg.get_slave());
+		TCPServerInfo slave = pkg.get_slave();
+		if(num_chunks_saved.get(slave) == null) {
+			num_chunks_saved.put(slave, 1);
+		}
+		else {
+			num_chunks_saved.put(slave, num_chunks_saved.get(slave)+1);
+		}
 	}
 	
 	/**
@@ -155,7 +164,12 @@ public class MasterServer extends TCPServer {
 			f.remove_slave_location(pkg.get_start(), pkg.get_slave());
 			if(f.get_num_chunks() == 0) {
 				file_storage_data.remove(identifier);
+				
 			}
+		}
+		TCPServerInfo slave = pkg.get_slave();
+		if(num_chunks_saved.get(slave) != null) {
+			num_chunks_saved.put(slave, Math.max(0, num_chunks_saved.get(slave)-1));
 		}
 	}
 	
@@ -201,36 +215,39 @@ public class MasterServer extends TCPServer {
 		synchronized(num_connects) {
 			num_connects.put(msg.getServerInfo(), 0);
 		}
-		slave.send(new TCPServerInfoPackage(null, get_least_occupied_slave(msg.getServerInfo())));
+		synchronized(num_chunks_saved) {
+			num_chunks_saved.put(msg.getServerInfo(), 0);
+
+		}
+//		slave.send(new TCPServerInfoPackage(null, get_least_occupied_slave(msg.getServerInfo())));
 		
 	}
 	
-	private TCPServerInfo get_least_occupied_slave(TCPServerInfo ignore) {
-		TCPServerInfo min_connects = null;
-		int min = Integer.MAX_VALUE;
-		synchronized(num_connects) {
-			for(TCPServerInfo slave : num_connects.keySet()) {
-				int curr_connects = num_connects.get(slave);
-				if(curr_connects < min && !(ignore != null && ignore.equals(slave))) {
-					min = num_connects.get(slave);
-					min_connects = slave;
-				}
-			}
-		}
-		return min_connects;
-	}
+//	private TCPServerInfo get_least_occupied_slave(TCPServerInfo ignore) {
+//		TCPServerInfo min_connects = null;
+//		int min = Integer.MAX_VALUE;
+//		synchronized(num_connects) {
+//			for(TCPServerInfo slave : num_connects.keySet()) {
+//				int curr_connects = num_connects.get(slave);
+//				if(curr_connects < min && !(ignore != null && ignore.equals(slave))) {
+//					min = num_connects.get(slave);
+//					min_connects = slave;
+//				}
+//			}
+//		}
+//		return min_connects;
+//	}
 	
-	private List<TCPServerInfo> get_least_occupied_slaves() {
+	private List<TCPServerInfo> get_least_chunks_slaves() {
 		ArrayList<TCPServerInfo> slaves = new ArrayList<TCPServerInfo>();
-
-		synchronized(num_connects) {
+		synchronized(num_chunks_saved) {
 			for(int i = 0; i < CHUNK_DISTR_CONST; i++) {
 				TCPServerInfo min_connects = null;
 				int min = Integer.MAX_VALUE;
-				for(TCPServerInfo slave : num_connects.keySet()) {
-					int curr_connects = num_connects.get(slave);
+				for(TCPServerInfo slave : num_chunks_saved.keySet()) {
+					int curr_connects = num_chunks_saved.get(slave);
 					if(curr_connects < min && !slaves.contains(slave)) {
-						min = num_connects.get(slave);
+						min = num_chunks_saved.get(slave);
 						min_connects = slave;
 					}
 				}
@@ -244,8 +261,8 @@ public class MasterServer extends TCPServer {
 	 * Handle a client's initial query, send information about slave server to contact
 	 */
 	private void client_initial_query(TCPConnection client, MessagePackage msg) {
-		List<TCPServerInfo> least_occ_slaves = get_least_occupied_slaves();
-		client.send(new TCPServerInfoPackage(null, least_occ_slaves));
+		List<TCPServerInfo> least_chunks_saved = get_least_chunks_slaves();
+		client.send(new TCPServerInfoPackage(null, least_chunks_saved));
 	}
 
 }

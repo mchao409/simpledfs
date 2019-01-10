@@ -38,15 +38,16 @@ class TestNotify {
 			Notify n = new Notify("127.0.0.1", master_port);
 			n.add_file("testing", "src/test/resources/chunkReaderTest.txt");
 			byte[] resp = n.read_file("testing");
+			System.out.println("hi");
 			assertTrue(Constants.equalsIgnorePadding(resp,  file_contents));
+			
+			n.add_file("test1", "src/test/resources/chunkReaderTest.txt");
 			
 			n.delete_file("testing");
 
 			resp = n.read_file("testing"); 
 			assertTrue(resp == null);
 			
-			n.delete_file("testing");
-
 			n.delete_file("should_not_exist");		
 			assertTrue(n.read_file("should_not_exist") == null);
 			
