@@ -4,13 +4,10 @@ import java.util.*;
 
 import message.ChunkLocationPackage;
 import message.FileChunkInfoPackage;
-import message.FileChunkPackage;
-import message.FileContentsPackage;
 import message.FileInfoPackage;
 import message.MessagePackage;
 import message.QueryPackage;
 import message.TCPServerInfoPackage;
-import network.FileContents;
 import network.TCPConnection;
 import network.TCPServerInfo;
 import server.Constants;
@@ -18,10 +15,6 @@ import server.TCPServer;
 import server.master_server.log.FileLog;
 
 import java.net.*;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class MasterServer extends TCPServer {
 

@@ -1,20 +1,11 @@
 package test;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Arrays;
-
 import org.junit.jupiter.api.Test;
 
 import main.RunServers;
-import network.FileContents;
 import network.Notify;
-import network.TCPConnection;
-import server.master_server.MasterServer;
-import server.slave_server.SlaveServer;
 
 class TestDisconnect {
 

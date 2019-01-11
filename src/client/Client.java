@@ -1,12 +1,10 @@
 package client;
-import network.*;
 
-import java.io.*;
-import java.net.*;
-import java.nio.file.Files;
+import java.io.IOException;
 import java.util.Scanner;
 
 import main.RunServers;
+import network.Notify;
 
 public class Client {
 	Scanner scan;

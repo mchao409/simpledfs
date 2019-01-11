@@ -6,18 +6,11 @@ import server.Constants;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 
 import file.ChunkReader;
-import file.FileChunk;
 import file.SystemFile;
 
 class TestChunkReader {

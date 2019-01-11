@@ -15,7 +15,6 @@ import message.QueryPackage;
 import message.ChunkLocationPackage;
 import message.FileChunkInfoPackage;
 import message.FileChunkPackage;
-import message.FileContentsPackage;
 import message.FileInfoPackage;
 import message.TCPServerInfoPackage;
 import server.Constants;

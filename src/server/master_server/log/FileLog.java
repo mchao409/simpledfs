@@ -2,12 +2,9 @@ package server.master_server.log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 
-import file.ChunkInterval;
 import network.TCPServerInfo;
-import server.Constants;
 
 /**
  * Contains information about the locations of chunks of a single file (ie. which slave servers the chunks are saved)
@@ -25,12 +22,6 @@ public class FileLog {
 	 * Identifier for the file
 	 */
 	private String identifier;
-	
-	/**
-	 * Total number of chunks in the file
-	 */
-	private int num_chunks;
-	
 	
 	public FileLog(String identifier) {
 		chunk_locs = new HashMap<Integer, List<TCPServerInfo>>();

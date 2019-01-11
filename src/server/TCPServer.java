@@ -6,7 +6,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 
-import message.FileContentsPackage;
 import message.MessagePackage;
 import network.TCPConnection;
 

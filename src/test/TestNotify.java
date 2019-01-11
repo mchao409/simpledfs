@@ -4,19 +4,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
-import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
 import main.RunServers;
-import network.FileContents;
 import network.Notify;
-import network.TCPConnection;
-import server.master_server.MasterServer;
-import server.slave_server.SlaveServer;
 import server.Constants;
 
 class TestNotify {
@@ -38,7 +31,6 @@ class TestNotify {
 			Notify n = new Notify("127.0.0.1", master_port);
 			n.add_file("testing", "src/test/resources/chunkReaderTest.txt");
 			byte[] resp = n.read_file("testing");
-			System.out.println("hi");
 			assertTrue(Constants.equalsIgnorePadding(resp,  file_contents));
 			
 			n.add_file("test1", "src/test/resources/chunkReaderTest.txt");

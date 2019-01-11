@@ -6,20 +6,13 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
-import java.util.HashSet;
-
 import file.FileChunk;
 import message.FileChunkInfoPackage;
 import message.FileChunkPackage;
-import message.FileContentsPackage;
 import message.MessagePackage;
-import message.MultipleFilesPackage;
-import message.QueryPackage;
 import message.TCPServerInfoPackage;
 import server.Constants;
 import server.TCPServer;
-import network.FileContents;
-import network.Notify;
 import network.TCPConnection;
 import network.TCPServerInfo;
 
@@ -29,6 +22,8 @@ public class SlaveServer extends TCPServer {
 	private TCPConnection master;
 	private String DB_PATH;
 	private TCPServerInfo slave_info;
+	
+	private static String delimiter = "##^^##";
 	
 	public SlaveServer(int port, String master_ip, int master_port) throws IOException {
 		super(port);
@@ -112,7 +107,7 @@ public class SlaveServer extends TCPServer {
 	
 	private boolean add_chunk_to_db(FileChunkPackage pkg) {
 		FileChunk chunk = pkg.get_chunk();
-		String save_name = pkg.get_identifier() + chunk.get_start();
+		String save_name = pkg.get_identifier() + delimiter + chunk.get_start();
 		try {
 			Files.write(Paths.get(DB_PATH + save_name), chunk.get_byte_arr());
 		} catch(IOException e) {
@@ -128,7 +123,7 @@ public class SlaveServer extends TCPServer {
 		notify_master_client(true);
 		String identifier = msg.get_identifier();
 		int start = msg.get_start();
-		String path = DB_PATH + identifier + start;
+		String path = DB_PATH + identifier + delimiter + start;
 		File f = new File(path);
 		byte[] contents = null;
 		try {
@@ -154,12 +149,13 @@ public class SlaveServer extends TCPServer {
 	 */
 	private synchronized void delete_file(TCPConnection s, FileChunkInfoPackage msg) throws IOException {
 		notify_master_client(true);
-		String save_name = msg.get_identifier() + msg.get_start();
+		String save_name = msg.get_identifier() + delimiter +  msg.get_start();
 		File f = new File(DB_PATH + save_name);
 		f.delete();
 		master.send(new FileChunkInfoPackage(Constants.CHUNK_DELETED, msg.get_identifier(), msg.get_start(), slave_info));
 		notify_master_client(false);
 	}
+	
 	
 //	/**
 //	 * Send all db data

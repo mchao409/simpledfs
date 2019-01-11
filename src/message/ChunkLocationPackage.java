@@ -7,8 +7,14 @@ import network.TCPServerInfo;
 
 public class ChunkLocationPackage extends MessagePackage {
 	
+	/**
+	 * Key represents the starting position of a chunk in the file, maps to a list of slave servers containing the chunk
+	 */
 	private HashMap<Integer, List<TCPServerInfo>> chunk_locs;
 	
+	/**
+	 * Identifier for the file
+	 */
 	private String identifier;
 	
 	public ChunkLocationPackage(String command, HashMap<Integer, List<TCPServerInfo>> chunk_locs, String identifier) {

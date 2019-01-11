@@ -1,24 +1,16 @@
 package test;
 
 import static org.junit.Assert.fail;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
-import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
 import main.RunServers;
-import message.FileContentsPackage;
-import message.QueryPackage;
-import message.TCPServerInfoPackage;
-import network.FileContents;
 import network.Notify;
-import network.TCPConnection;
 import server.Constants;
 
 class TestSlaveServer {
@@ -55,7 +47,7 @@ class TestSlaveServer {
 		// two threads, one attempts to read, other attempts to delete
 		Thread read = new Thread(() -> {
 			Notify n = new Notify("127.0.0.1",master_port);
-			byte[] resp = n.read_file("testing");
+			n.read_file("testing");
 
 		});
 		read.start();
