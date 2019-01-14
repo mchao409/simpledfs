@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import org.junit.jupiter.api.Test;
 
 import main.RunServers;
-import network.Notify;
+import network.DFS;
 import server.Constants;
 
 class TestSlaveServer {
@@ -27,7 +27,7 @@ class TestSlaveServer {
 		Thread.sleep(1000);
 		byte[] file_contents;
 		try {
-			Notify n = new Notify("127.0.0.1", master_port);
+			DFS n = new DFS("127.0.0.1", master_port);
 			// add file
 			File f = new File("src/test/resources/file2");
 			file_contents = Files.readAllBytes(f.toPath());
@@ -46,12 +46,12 @@ class TestSlaveServer {
 		}
 		// two threads, one attempts to read, other attempts to delete
 		Thread read = new Thread(() -> {
-			Notify n = new Notify("127.0.0.1",master_port);
+			DFS n = new DFS("127.0.0.1",master_port);
 			n.read_file("testing");
 
 		});
 		read.start();
-		Notify n = new Notify("127.0.0.1", master_port);
+		DFS n = new DFS("127.0.0.1", master_port);
 		n.delete_file("testing");
 
 	}

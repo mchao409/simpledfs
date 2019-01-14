@@ -1,10 +1,18 @@
 package network;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -20,13 +28,13 @@ import message.TCPServerInfoPackage;
 import server.Constants;
 
 /**
- * API for communicating with remote file system
+ * Communication with remote file system
  *
  */
-public class Notify {
+public class DFS {
 	private TCPConnection master;
 	
-	public Notify(String master_address, int master_port) {
+	public DFS(String master_address, int master_port) {
 		try {
 			master = new TCPConnection(new Socket(master_address, master_port));
 		} catch(IOException e) {
@@ -95,9 +103,66 @@ public class Notify {
 			if(resp.getCommand().equals(Constants.FILE_ADDED)) {
 				ready = true;
 			}
-			
 		}
 		return true;
+	}
+	
+	/**
+	 * Read a file from the dfs and save its contents in a local file
+	 * @param file_name the file to read from the dfs
+	 * @param path_to_save_to the local path to save the file
+	 */
+	public void read_file(String file_name, String path_to_save_to) {
+		master.send(new FileInfoPackage(Constants.READ_FILE, file_name));
+		ChunkLocationPackage resp = (ChunkLocationPackage)master.read();
+		HashMap<Integer, List<TCPServerInfo>> chunk_locs = resp.get_chunk_locations();
+		if(chunk_locs == null) {
+			return;
+		}
+		Path path = Paths.get(path_to_save_to);
+		OutputStream out;
+		try {
+			out = Files.newOutputStream(path);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+			System.out.println("exception");
+			return;
+		}
+		ArrayList<Integer> keys = new ArrayList<Integer>();
+		keys.addAll(chunk_locs.keySet());
+		Collections.sort(keys);
+		for(Integer start: keys) {
+			List<TCPServerInfo> slaves = chunk_locs.get(start);
+			FileChunk chunk = null;
+			for(int i = 0; i < slaves.size(); i++) {
+				if(chunk != null) break;
+				TCPServerInfo slave = slaves.get(i);
+				try {
+					TCPConnection connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
+					connect.send(new FileChunkInfoPackage(Constants.READ_CHUNK, file_name, start));
+					FileChunkPackage pkg = (FileChunkPackage)connect.read();
+					if(pkg != null) {
+						chunk = pkg.get_chunk();
+						break;
+					}
+			
+				} catch(IOException e) {
+					continue;
+				}
+			}
+			if(chunk != null) {
+				try {
+					out.write(chunk.get_byte_arr());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		try {
+			out.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -158,11 +223,6 @@ public class Notify {
 				deleted = true;
 			}
 		}
-//		try {
-//			Thread.sleep(1000);
-//		} catch(InterruptedException e) {
-//			e.printStackTrace();
-//		}
 	}
 	
 	/**

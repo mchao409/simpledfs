@@ -4,14 +4,14 @@ import java.io.IOException;
 import java.util.Scanner;
 
 import main.RunServers;
-import network.Notify;
+import network.DFS;
 
 public class Client {
 	Scanner scan;
-	private Notify notify;
+	private DFS notify;
 	public Client(int masterPort) throws IOException {
 		scan = new Scanner(System.in);
-		notify = new Notify("127.0.0.1", masterPort);
+		notify = new DFS("127.0.0.1", masterPort);
 	}
 	
 	private void prompt() throws IOException {

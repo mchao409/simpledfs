@@ -5,7 +5,7 @@ import java.net.Socket;
 import org.junit.jupiter.api.Test;
 
 import main.RunServers;
-import network.Notify;
+import network.DFS;
 
 class TestDisconnect {
 
@@ -21,7 +21,7 @@ class TestDisconnect {
 		s.close();
 		Thread.sleep(1000);
 		s = new Socket("127.0.0.1", 8999);
-		Notify n = new Notify("127.0.0.1", 9000);
+		DFS n = new DFS("127.0.0.1", 9000);
 
 		n.add_file("test", "src/test/resources/chunkReaderTest.txt");
 
