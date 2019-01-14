@@ -128,6 +128,29 @@ public class DFS {
 			System.out.println("exception");
 			return;
 		}
+		handle_chunk_locs(chunk_locs, file_name, out,null);
+	}
+	
+	/**
+	 * Read a file from the distributed file system
+	 * @param file_name
+	 * @return a byte array representing the contents of the file, null if the file does not exist
+	 */
+	public byte[] read_file(String file_name) {
+		master.send(new FileInfoPackage(Constants.READ_FILE, file_name));
+		ChunkLocationPackage resp = (ChunkLocationPackage)master.read();
+		HashMap<Integer, List<TCPServerInfo>> chunk_locs = resp.get_chunk_locations();
+		if(chunk_locs == null) {
+			return null;
+		}
+		SystemFile file = new SystemFile();
+		handle_chunk_locs(chunk_locs, file_name, null, file);
+		return file.get_byte_arr();
+	}
+	
+	
+	private void handle_chunk_locs(HashMap<Integer, List<TCPServerInfo>> chunk_locs, String file_name,
+			OutputStream out, SystemFile file) {
 		ArrayList<Integer> keys = new ArrayList<Integer>();
 		keys.addAll(chunk_locs.keySet());
 		Collections.sort(keys);
@@ -151,57 +174,18 @@ public class DFS {
 				}
 			}
 			if(chunk != null) {
-				try {
-					out.write(chunk.get_byte_arr());
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-		try {
-			out.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	/**
-	 * Read a file from the distributed file system
-	 * @param file_name
-	 * @return a byte array representing the contents of the file, null if the file does not exist
-	 */
-	public byte[] read_file(String file_name) {
-		master.send(new FileInfoPackage(Constants.READ_FILE, file_name));
-		ChunkLocationPackage resp = (ChunkLocationPackage)master.read();
-		HashMap<Integer, List<TCPServerInfo>> chunk_locs = resp.get_chunk_locations();
-		if(chunk_locs == null) {
-			return null;
-		}
-		SystemFile file = new SystemFile();
-		for(Integer start: chunk_locs.keySet()) {
-			List<TCPServerInfo> slaves = chunk_locs.get(start);
-			FileChunk chunk = null;
-			for(int i = 0; i < slaves.size(); i++) {
-				if(chunk != null) break;
-				TCPServerInfo slave = slaves.get(i);
-				try {
-					TCPConnection connect = new TCPConnection(new Socket(slave.getAddress(), slave.getPort()));
-					connect.send(new FileChunkInfoPackage(Constants.READ_CHUNK, file_name, start));
-					FileChunkPackage pkg = (FileChunkPackage)connect.read();
-					if(pkg != null) {
-						chunk = pkg.get_chunk();
-						break;
+				if(out != null) {
+					try {
+						out.write(chunk.get_byte_arr());
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
-			
-				} catch(IOException e) {
-					continue;
+				}
+				else {
+					file.add_chunk(chunk);
 				}
 			}
-			if(chunk != null) {
-				file.add_chunk(chunk);
-			}
 		}
-		return file.get_byte_arr();
 	}
 	
 	/**
