@@ -1,7 +1,7 @@
 package test;
 
 import main.RunServers;
-import network.Notify;
+import network.DFS;
 
 public class Test {
 
@@ -10,7 +10,7 @@ public class Test {
 		s.start_master_server("127.0.0.1", 9000);
 		s.start_slave_servers(8000, 3);
 		Thread.sleep(500);
-		Notify n = new Notify("127.0.0.1", 9000);
+		DFS n = new DFS("127.0.0.1", 9000);
 		n.add_file("test", "src/test/resources/chunkReaderTest.txt");
 		Thread.sleep(1000);
 //		n.read_file("test");
