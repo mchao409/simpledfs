@@ -34,6 +34,9 @@ public class MasterServer extends TCPServer {
 	 */
 	private static int CHUNK_DISTR_CONST = 3;
 
+	/**
+	 * Information about what chunks of each file is saved
+	 */
 	private HashMap<String, FileLog> file_storage_data;
 	
 	
@@ -201,7 +204,7 @@ public class MasterServer extends TCPServer {
 	}
 	
 	/**
-	 * Handle the starting up of a new slave server, redirects it to another slave to retrieve db info
+	 * Handle the starting up of a new slave server
 	 */
 	private void new_slave(TCPConnection slave, TCPServerInfoPackage msg) {
 		assert msg.getCommand().equals(Constants.NEW_SLAVE);
@@ -211,25 +214,8 @@ public class MasterServer extends TCPServer {
 		synchronized(num_chunks_saved) {
 			num_chunks_saved.put(msg.getServerInfo(), 0);
 
-		}
-//		slave.send(new TCPServerInfoPackage(null, get_least_occupied_slave(msg.getServerInfo())));
-		
+		}		
 	}
-	
-//	private TCPServerInfo get_least_occupied_slave(TCPServerInfo ignore) {
-//		TCPServerInfo min_connects = null;
-//		int min = Integer.MAX_VALUE;
-//		synchronized(num_connects) {
-//			for(TCPServerInfo slave : num_connects.keySet()) {
-//				int curr_connects = num_connects.get(slave);
-//				if(curr_connects < min && !(ignore != null && ignore.equals(slave))) {
-//					min = num_connects.get(slave);
-//					min_connects = slave;
-//				}
-//			}
-//		}
-//		return min_connects;
-//	}
 	
 	private List<TCPServerInfo> get_least_chunks_slaves() {
 		ArrayList<TCPServerInfo> slaves = new ArrayList<TCPServerInfo>();

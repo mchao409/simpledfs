@@ -28,7 +28,7 @@ import message.TCPServerInfoPackage;
 import server.Constants;
 
 /**
- * Communication with remote file system
+ * Communication with remote file system. Calls to public methods are not thread-safe.
  *
  */
 public class DFS {
@@ -148,7 +148,9 @@ public class DFS {
 		return file.get_byte_arr();
 	}
 	
-	
+	/**
+	 * Helper method for the `read` method
+	 */
 	private void handle_chunk_locs(HashMap<Integer, List<TCPServerInfo>> chunk_locs, String file_name,
 			OutputStream out, SystemFile file) {
 		ArrayList<Integer> keys = new ArrayList<Integer>();
@@ -207,20 +209,5 @@ public class DFS {
 				deleted = true;
 			}
 		}
-	}
-	
-	/**
-	 * Currently used for testing
-	 * @param slave_port
-	 */
-	public void printAll(int slave_port) {
-		try  {
-			TCPConnection connect = new TCPConnection(new Socket("127.0.0.1", slave_port));
-			QueryPackage m = new QueryPackage(Constants.PRINT_ALL);
-			connect.send(m);
-		} catch(IOException e ) {
-			e.printStackTrace();
-		}
-	}
-	
+	}	
 }
